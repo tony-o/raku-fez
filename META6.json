@@ -1,0 +1,15 @@
+{
+  "name": "fez",
+  "auth": "zef:tonyo",
+  "ver": "0",
+  "build-depends": ["LibraryMake"],
+  "provides": {
+    "Fez": "lib/Fez.rakumod"
+  },
+  "resources": [
+    "lib/libgetpw.so",
+    "lib/libgetpw.dylib",
+    "lib/libgetpw.dll",
+    "config.json"
+  ]
+}

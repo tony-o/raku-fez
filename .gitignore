@@ -1,0 +1,7 @@
+*.swp
+.precomp
+sdist/
+Makefile
+resources/lib/*.dll
+resources/lib/*.dylib
+resources/lib/*.so

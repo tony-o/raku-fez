@@ -1,0 +1,17 @@
+SRC=src
+LD=
+all : lib
+
+lib : resources/lib/libgetpw%SO%
+
+resources/lib/libgetpw%SO% : $(SRC)/pass.c
+	%LD% %LDSHARED% %LDFLAGS% %LDOUT%resources/lib/libgetpw%SO% $(SRC)/pass.c $(LD)
+
+$(SRC)/pass%O% : $(SRC)/pass.c
+	%CC% -I $(SRC) -c %CCSHARED% %CCFLAGS% %CCOUT%$(SRC)/pass%O% $(SRC)/pass.c
+
+clean :
+	@rm -f $(SRC)/*.o resources/lib/libgetpw%SO%
+
+realclean :
+	@rm -f Makefile
