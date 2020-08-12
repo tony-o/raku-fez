@@ -5,8 +5,6 @@ method get($url, :%headers = ()) {
   @args.push("-H", "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  say @args.join(" ");
-
   run(|@args, :out, :err).out.slurp;
 }
 
@@ -16,8 +14,6 @@ method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
   @args.push('-T', $file) if $file;
   @args.push("-H", "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
-
-  say @args.join(" ");
 
   run(|@args, :out, :err).out.slurp;
 }

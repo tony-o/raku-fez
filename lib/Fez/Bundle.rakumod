@@ -30,7 +30,7 @@ sub bundle($target) is export {
   
   my ($out, $caught);
   for @handlers -> $handler {
-    CATCH { default { .message.say; $caught = True; .resume; } }
+    CATCH { default { $*IN.print('!> ' ~ .message); $caught = True; .resume; } }
     $caught = False;
     $out = $handler.bundle($location.absolute);
     next if $caught;

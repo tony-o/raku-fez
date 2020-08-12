@@ -5,7 +5,7 @@ use Fez::Util::Json;
 use Fez::Web;
 use Fez::Bundle;
 
-our $CONFIG = from-j(%?RESOURCES<config.json>.IO.slurp);
+our $CONFIG = load-config;
 
 multi MAIN('register') is export {
   my ($em, $un, $pw);
@@ -39,6 +39,7 @@ multi MAIN('login') is export {
     data => { username => $un, password => $pw, }
   );
   if ! $response<success>.so {
+    say $response;
     say "!> failed to login: {$response<message>}";
     exit 255;
   }
@@ -75,10 +76,15 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
            ~ ':ver<'  ~ $meta<ver> ~ '>'
            ~ ':auth<' ~ $meta<auth>.subst(/\</, '\\<').subst(/\>/, '\\>') ~ '>';
   
-  printf "%s looks OK\n", $auth;
+  printf "#> %s looks OK\n", $auth;
 }
 
 multi MAIN('upload', Str :$file = '') is export {
+  MAIN('login') unless $CONFIG<key>;
+  if ! ($CONFIG<key>//0) {
+    say '!> you must login to upload';
+    exit 255;
+  }
   my $fn = $file;
   if '' ne $file && ! $file.IO.f {
     say "Cannot find $file";
@@ -101,5 +107,9 @@ multi MAIN('upload', Str :$file = '') is export {
      :method<PUT>,
      :file($fn.IO.absolute),
   );
+  say '#> Hey! You did it! Your dist will be indexed shortly.';
+}
 
+sub load-config {
+  from-j(%?RESOURCES<config.json>.IO.slurp);
 }
