@@ -30,11 +30,11 @@ sub bundle($target) is export {
   
   my ($out, $caught);
   for @handlers -> $handler {
-    $caught = False;
     CATCH { default { .message.say; $caught = True; .resume; } }
+    $caught = False;
     $out = $handler.bundle($location.absolute);
-    next if $caught = True;
-    return $out;
+    next if $caught;
+    return $location;
   }
   die 'All bundlers exhausted, unable to make .tar.gz';
 }

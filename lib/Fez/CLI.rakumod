@@ -15,7 +15,7 @@ multi MAIN('register') is export {
 
   my $response = post(
     '/register',
-    { username => $un, email => $em, password => $pw },
+    data => { username => $un, email => $em, password => $pw },
   );
 
   if ! $response<success>.so {
@@ -36,7 +36,7 @@ multi MAIN('login') is export {
 
   my $response = post(
     '/login',
-    { username => $un, password => $pw, }
+    data => { username => $un, password => $pw, }
   );
   if ! $response<success>.so {
     say "!> failed to login: {$response<message>}";
@@ -64,10 +64,10 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 
   #TODO: check for provides and resources matches in `lib` and `resources`
 
-  if $meta<auth>.substr(4) ne $CONFIG<un> {
+  if $meta<auth>.substr(4) ne ($CONFIG<un>//'<unset>') {
     printf "!> \"%s\" does not match the username you last logged in with (%s),\n!> you will need to login before uploading your dist\n\n",
            $meta<auth>.substr(4),
-           $CONFIG<un>;
+           ($CONFIG<un>//'unset');
     exit 255 if $auth-mismatch-error;
   }
 
@@ -79,6 +79,7 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 }
 
 multi MAIN('upload', Str :$file = '') is export {
+  my $fn = $file;
   if '' ne $file && ! $file.IO.f {
     say "Cannot find $file";
     exit 255;
@@ -87,7 +88,7 @@ multi MAIN('upload', Str :$file = '') is export {
     MAIN('checkbuild', :auth-mismatch-error);
     try {
       CATCH { default { printf "!> ERROR: %s\n", .message; exit 255; } }
-      bundle('.'.IO.absolute);
+      $fn = bundle('.'.IO.absolute);
     };
   }
   my $response = get(
@@ -98,8 +99,7 @@ multi MAIN('upload', Str :$file = '') is export {
   my $upload = post(
      $response<key>,
      :method<PUT>,
-     :file($file.IO.absolute),
+     :file($fn.IO.absolute),
   );
 
-  say $upload;
 }
