@@ -5,3 +5,4 @@ Makefile
 resources/lib/*.dll
 resources/lib/*.dylib
 resources/lib/*.so
+resources/config.json
