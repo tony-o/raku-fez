@@ -57,11 +57,12 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
   };
   my $error = sub ($e) { say "!> $e"; exit 255; };
 
+  my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
   $error('name should be a value') unless $meta<name>;
-  $error('ver should not be nil')  unless $meta<ver>:exists;
+  $error('ver should not be nil')  unless $ver eq '';
   $error('auth should not be nil') unless $meta<auth>;
   $error('auth should start with "zef:"') unless $meta<auth>.substr(0,4) eq 'zef:';
-  $error('ver cannot be "*"') if $meta<ver>.trim eq '*';
+  $error('ver cannot be "*"') if $ver.trim eq '*';
 
   #TODO: check for provides and resources matches in `lib` and `resources`
 
@@ -73,7 +74,7 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
   }
 
   my $auth = $meta<name>
-           ~ ':ver<'  ~ $meta<ver> ~ '>'
+           ~ ':ver<'  ~ $ver ~ '>'
            ~ ':auth<' ~ $meta<auth>.subst(/\</, '\\<').subst(/\>/, '\\>') ~ '>';
   
   printf "#> %s looks OK\n", $auth;
