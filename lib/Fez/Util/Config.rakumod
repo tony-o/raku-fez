@@ -13,3 +13,5 @@ sub write-config($out) is export {
   $CONFIG-PATH.IO.spurt(to-j($out));
   $CONFIG = $out;
 }
+
+sub config-path is export { $CONFIG-PATH; }

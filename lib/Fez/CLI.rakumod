@@ -110,3 +110,29 @@ multi MAIN('upload', Str :$file = '') is export {
   );
   say '#> Hey! You did it! Your dist will be indexed shortly.';
 }
+
+multi MAIN(Bool :h(:$help)?) {
+  note qq:to/END/
+    Fez - Raku / Perl6 package utility
+
+    USAGE
+    
+      fez command [args]
+
+    COMMANDS
+
+      register              registers you up for a new account
+      login                 logs you in and saves your key info
+      upload                creates a distribution tarball and uploads
+
+    ENV OPTIONS
+
+      FEZ_CONFIG            if you need to modify your config, set this env var
+
+    CONFIGURATION (using: { config-path })
+
+      Copy this to a cool a location and write your own requestors/bundlers or
+      ignore it and use the default curl/wget/git tools for great success.
+
+  END
+}
