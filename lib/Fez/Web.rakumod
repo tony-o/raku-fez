@@ -1,10 +1,10 @@
 unit package Fez::Web;
 
 use Fez::Util::Json;
+use Fez::Util::Config;
 
-my $CONFIG = from-j(%?RESOURCES<config.json>.IO.slurp);
-my @handlers = |$CONFIG<requestors>;
-my $uri      = $CONFIG<host>;
+my @handlers = |config<requestors>;
+my $uri      = config<host>;
 
 my $handler = False;
 for @handlers -> $h {

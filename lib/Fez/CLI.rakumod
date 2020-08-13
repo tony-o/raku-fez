@@ -2,10 +2,10 @@ unit package Fez::CLI;
 
 use Fez::Util::PW;
 use Fez::Util::Json;
+use Fez::Util::Config;
 use Fez::Web;
 use Fez::Bundle;
 
-our $CONFIG = load-config;
 
 multi MAIN('register') is export {
   my ($em, $un, $pw);
@@ -39,14 +39,14 @@ multi MAIN('login') is export {
     data => { username => $un, password => $pw, }
   );
   if ! $response<success>.so {
-    say $response;
     say "!> failed to login: {$response<message>}";
     exit 255;
   }
 
-  $CONFIG<key> = $response<key>;
-  $CONFIG<un>  = $un;
-  %?RESOURCES<config.json>.IO.spurt(to-j($CONFIG));
+  my %c = config;
+  %c<key> = $response<key>;
+  %c<un>  = $un;
+  write-config(%c);
   say "#> login successful, you can now upload dists";
 }
 
@@ -65,10 +65,10 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 
   #TODO: check for provides and resources matches in `lib` and `resources`
 
-  if $meta<auth>.substr(4) ne ($CONFIG<un>//'<unset>') {
+  if $meta<auth>.substr(4) ne (config<un>//'<unset>') {
     printf "!> \"%s\" does not match the username you last logged in with (%s),\n!> you will need to login before uploading your dist\n\n",
            $meta<auth>.substr(4),
-           ($CONFIG<un>//'unset');
+           (config<un>//'unset');
     exit 255 if $auth-mismatch-error;
   }
 
@@ -80,8 +80,8 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 }
 
 multi MAIN('upload', Str :$file = '') is export {
-  MAIN('login') unless $CONFIG<key>;
-  if ! ($CONFIG<key>//0) {
+  MAIN('login') unless config<key>;
+  if ! (config<key>//0) {
     say '!> you must login to upload';
     exit 255;
   }
@@ -99,7 +99,7 @@ multi MAIN('upload', Str :$file = '') is export {
   }
   my $response = get(
     '/upload',
-    headers => {'Authorization' => "Zef {$CONFIG<key>}"},
+    headers => {'Authorization' => "Zef {config<key>}"},
   );
  
   my $upload = post(
@@ -108,8 +108,4 @@ multi MAIN('upload', Str :$file = '') is export {
      :file($fn.IO.absolute),
   );
   say '#> Hey! You did it! Your dist will be indexed shortly.';
-}
-
-sub load-config {
-  from-j(%?RESOURCES<config.json>.IO.slurp);
 }

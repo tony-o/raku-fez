@@ -5,7 +5,9 @@ method get($url, :%headers = ()) {
   @args.push("-H", "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  run(|@args, :out, :err).out.slurp;
+  my $proc = run(|@args, :out, :err);
+  die 'curl error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
+  $proc.out.slurp;
 }
 
 method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
@@ -15,7 +17,9 @@ method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
   @args.push("-H", "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  run(|@args, :out, :err).out.slurp;
+  my $proc = run(|@args, :out, :err);
+  die 'curl error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
+  $proc.out.slurp;
 }
 
 method able {

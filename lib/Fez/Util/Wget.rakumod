@@ -5,11 +5,13 @@ method get($url, :%headers = ()) {
   @args.push('--header', "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  run(|@args, :out, :err).out.slurp;
+  my $proc = run(|@args, :out, :err);
+  die 'wget error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
+  $proc.out.slurp;
 }
 
 method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
-  my @args = ('wget', '--method', $method, '-qO-');
+  my @args = ('wget', '--method', $method, '-O-');
   @args.push('--body-data', $data) if $data;
   @args.push('--body-file', $file) if $file;
 
@@ -17,7 +19,8 @@ method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
   @args.push($url);
 
   my $proc = run(|@args, :out, :err);
-  run(|@args, :out, :err).out.slurp;
+  die 'wget error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
+  $proc.out.slurp;
 }
 
 method able {
