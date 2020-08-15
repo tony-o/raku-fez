@@ -59,7 +59,7 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 
   my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
   $error('name should be a value') unless $meta<name>;
-  $error('ver should not be nil')  unless $ver eq '';
+  $error('ver should not be nil')  if     $ver eq '';
   $error('auth should not be nil') unless $meta<auth>;
   $error('auth should start with "zef:"') unless $meta<auth>.substr(0,4) eq 'zef:';
   $error('ver cannot be "*"') if $ver.trim eq '*';

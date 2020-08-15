@@ -25,7 +25,6 @@
   "resources": [
     "lib/libgetpw.so",
     "lib/libgetpw.dylib",
-    "lib/libgetpw.dll",
     "config.json"
   ]
 }
