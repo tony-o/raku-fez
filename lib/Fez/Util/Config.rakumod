@@ -2,7 +2,7 @@ unit module Fez::Util::Config;
 
 use Fez::Util::Json;
 
-state $CONFIG-PATH = (%*ENV<FEZ_CONFIG>.IO//%?RESOURCES<config.json>).IO;
+state $CONFIG-PATH = (%*ENV<FEZ_CONFIG>//%?RESOURCES<config.json>).IO;
 state $CONFIG      = from-j($CONFIG-PATH.slurp);
 
 sub config is export {
