@@ -18,6 +18,7 @@
     "Fez::Util::Git": "lib/Fez/Util/Git.rakumod",
     "Fez::Util::Curl": "lib/Fez/Util/Curl.rakumod",
     "Fez::Util::Config": "lib/Fez/Util/Config.rakumod",
+    "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
     "Fez::Web": "lib/Fez/Web.rakumod",
     "Fez::CLI": "lib/Fez/CLI.rakumod",
     "Fez::Bundle": "lib/Fez/Bundle.rakumod"

@@ -12,9 +12,10 @@ for @chandlers -> $h {
   require ::("$h");
   next if $caught;
   next unless ::("$h").able;
+  next unless ::("$h").^can('bundle');
   @handlers.push: ::("$h").new;
 }
-die 'Unable to find a suitable handler for web (tried git and tar), please ensure one is in your path'
+die 'Unable to find a suitable handler for bundling (tried git and tar), please ensure one is in your path'
   unless @handlers.elems;
 
 sub bundle($target) is export {
@@ -30,7 +31,7 @@ sub bundle($target) is export {
   
   my ($out, $caught);
   for @handlers -> $handler {
-    CATCH { default { $*IN.print('!> ' ~ .message); $caught = True; .resume; } }
+    CATCH { default { $*IN.print('=<< ' ~ .message); $caught = True; .resume; } }
     $caught = False;
     $out = $handler.bundle($location.absolute);
     next if $caught;
