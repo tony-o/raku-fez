@@ -1,6 +1,6 @@
 {
   "name":          "fez",
-  "auth":          "zef:tonyo",
+  "auth":          "zef:tony-o",
   "version":       "0",
   "api":           "0",
   "description":   "one way to upload your dists to the masses.",
@@ -9,7 +9,6 @@
   "meta-version":  "0",
   "build-depends": ["LibraryMake"],
   "depends":       ["NativeCall"],
-
   "provides": {
     "Fez": "lib/Fez.rakumod",
     "Fez::Util::PW": "lib/Fez/Util/PW.rakumod",
