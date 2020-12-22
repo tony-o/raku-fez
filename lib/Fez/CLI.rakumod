@@ -5,7 +5,58 @@ use Fez::Util::Json;
 use Fez::Util::Config;
 use Fez::Web;
 use Fez::Bundle;
+use Zef::Config;
 
+multi MAIN('monkey-zef') is export {
+  my $conf-path = %*ENV<ZEF_CONFIG_PATH> // Zef::Config::guess-path();
+  say '>>= i plan to patch: ' ~ $conf-path;
+  my $j = from-j($conf-path.IO.slurp);
+  my $k = so $j<Repository>.grep: { $_<short-name> eq 'fez' };
+  my $c = 0;
+  if $k {
+    say '>>= skipping fez, already installed.';
+  } else {
+    my $ok = prompt('>>= add fez (p6c) mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
+    if $ok ~~ m{^y|yes$} {
+      $j<Repository>.push: {
+        short-name => 'fez',
+        enabled    => 1,
+        module     => 'Zef::Repository::Ecosystems',
+        options    => {
+          name        => 'fez',
+          auto-update => 1,
+          mirrors     => ['http://32.zef.pm/'],
+        },
+      };
+      $c++;
+    }
+  }
+  $k = so $j<Repository>.grep: { $_<short-name> eq 'zef' };
+  if $k {
+    say '>>= skipping zef, already installed.';
+  } else {
+    my $ok = prompt('>>= add zef mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
+    if $ok ~~ m{^y|yes$} {
+      $j<Repository>.push: {
+        short-name => 'zef',
+        enabled    => 1,
+        module     => 'Zef::Repository::Ecosystems',
+        options    => {
+          name        => 'zef',
+          auto-update => 1,
+          mirrors     => ['http://360.zef.pm/'],
+        },
+      };
+      $c++;
+    }
+  }
+  if $c {
+    $conf-path.IO.spurt(to-j($j));
+    say '>>= changes saved to zef config';
+  } else {
+    say '>>= no changes made';
+  }
+}
 
 multi MAIN('register') is export {
   my ($em, $un, $pw);
