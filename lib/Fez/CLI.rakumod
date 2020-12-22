@@ -16,7 +16,8 @@ multi MAIN('monkey-zef') is export {
   if $k {
     say '>>= skipping fez, already installed.';
   } else {
-    my $ok = prompt('>>= add fez (p6c) mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
+    say '>>= fez mirror: this is a mirror of p6c.';
+    my $ok = prompt('>>= add fez mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
     if $ok ~~ m{^y|yes$} {
       $j<Repository>.push: {
         short-name => 'fez',
@@ -35,6 +36,7 @@ multi MAIN('monkey-zef') is export {
   if $k {
     say '>>= skipping zef, already installed.';
   } else {
+    say '>>= zef mirror: this is where modules are uploaded by module authors using fez';
     my $ok = prompt('>>= add zef mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
     if $ok ~~ m{^y|yes$} {
       $j<Repository>.push: {
@@ -175,6 +177,7 @@ multi MAIN(Bool :h(:$help)?) {
       register              registers you up for a new account
       login                 logs you in and saves your key info
       upload                creates a distribution tarball and uploads
+      monkey-zef            modifies your zef configuration for fez repos
 
     ENV OPTIONS
 
