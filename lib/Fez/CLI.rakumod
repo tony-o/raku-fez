@@ -20,7 +20,7 @@ multi MAIN('monkey-zef') is export {
     my $ok = prompt('>>= add fez mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
     if $ok ~~ m{^y|yes$} {
       $j<Repository>.push: {
-        short-name => 'fez',
+        short-name => 'zef-p6c',
         enabled    => 1,
         module     => 'Zef::Repository::Ecosystems',
         options    => {
