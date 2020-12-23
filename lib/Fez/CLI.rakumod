@@ -1,6 +1,6 @@
 unit package Fez::CLI;
 
-use Fez::Util::PW;
+use Fez::Util::Pass;
 use Fez::Util::Json;
 use Fez::Util::Config;
 use Fez::Web;
@@ -64,7 +64,7 @@ multi MAIN('register') is export {
   my ($em, $un, $pw);
   $em = prompt('>>= Email: ') while ($em//'').chars < 6;
   $un = prompt('>>= Username: ') while ($un//'').chars < 3;
-  $pw = getpw('>>= Password: ') while ($pw//'').chars < 8;
+  $pw = getpass('>>= Password: ') while ($pw//'').chars < 8;
 
   my $response = post(
     '/register',
@@ -85,7 +85,7 @@ multi MAIN('login') is export {
   my $un = $*USERNAME // '';
   my $pw = $*PASSWORD // '';
   $un = prompt('>>= Username: ') while ($un//'').chars < 3;
-  $pw = getpw('>>= Password: ') while ($pw//'').chars < 8;
+  $pw = getpass('>>= Password: ') while ($pw//'').chars < 8;
 
   my $response = post(
     '/login',
