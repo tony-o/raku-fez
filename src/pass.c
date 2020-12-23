@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
+
+#if defined (__WIN32__)
+  #include <conio.h>
+#else
+  #include <termios.h>
+#endif
 
 #define MAXPW 128
 
@@ -10,9 +15,24 @@ typedef struct pw {
 	size_t len;
 } pw_s;
 
+
 pw_s* getpasswd() {
-	pw_s *p = malloc(sizeof(pw_s));
-  p->len = 0;
+  #if defined (__WIN32__)
+  
+  pw_s *p = calloc(1, sizeof(pw_s));
+  char c;  
+
+  p->password = calloc(MAXPW, sizeof(char));
+
+  do {
+    c = _getch();
+    p->password[p->len++] = c;
+  } while (c != '\r' && c != '\n');
+  p->password[p->len--] = 0;
+  
+  #else
+	
+  pw_s *p = calloc(1, sizeof(pw_s));
 
   struct termios old_t;
   struct termios new_t;
@@ -53,9 +73,11 @@ pw_s* getpasswd() {
 
   p->password[p->len] = 0;
 
+  #endif
   return p;
 }
 
 void freepwd(pw_s* p) {
+  free(p->password);
   free(p);
 }
