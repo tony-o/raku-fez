@@ -14,9 +14,9 @@ multi MAIN('monkey-zef') is export {
   my $k = so $j<Repository>.grep: { $_<short-name> eq 'zef-p6c' };
   my $c = 0;
   if $k {
-    say '>>= skipping fez, already installed.';
+    say '>>= skipping zef-p6c, already installed.';
   } else {
-    say '>>= fez mirror: this is a mirror of p6c.';
+    say '>>= zef mirror: this is a mirror of p6c.';
     my $ok = prompt('>>= add fez mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
     if $ok ~~ m{^y|yes$} {
       $j<Repository>.push: {
