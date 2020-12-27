@@ -23,8 +23,9 @@
     "Fez::Bundle": "lib/Fez/Bundle.rakumod"
   },
   "resources": [
-    "lib/libgetpw.so",
-    "lib/libgetpw.dylib",
-    "config.json"
-  ]
+      "lib/libgetpw.so",
+      "lib/libgetpw.dylib",
+      "config.json"
+  ],
+    "source-url": "https://github.com/tony-o/raku-fez.git"
 }
