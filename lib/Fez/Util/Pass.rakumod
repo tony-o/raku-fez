@@ -20,9 +20,8 @@ if $*DISTRO.is-win {
       printf('=<< stty not found.  please submit a bug report at https://github.com/tony-o/raku-fez');
       exit(255);
     }
-    my $opt = $p.out.slurp;
+    my $opt = $p.out.get;
     run 'stty', '-echo';
-    chomp $opt;
     my $c = get;
     run 'stty', $opt;
     print "\n";
