@@ -14,17 +14,17 @@ multi MAIN('monkey-zef') is export {
   my $k = so $j<Repository>.grep: { $_<short-name> eq 'zef-p6c' };
   my $c = 0;
   if $k {
-    say '>>= skipping zef-p6c, already installed.';
+    say '>>= Skipping zef-p6c ecosystem, already installed.';
   } else {
-    say '>>= zef mirror: this is a mirror of p6c.';
-    my $ok = prompt('>>= add fez mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
+    say '>>= zef-p6c: A mirror of the p6c ecosystem.';
+    my $ok = prompt('>>= Add zef-p6c ecosystem? (y/n) ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
     if $ok ~~ m{^y|yes$} {
       $j<Repository>.push: {
         short-name => 'zef-p6c',
         enabled    => 1,
         module     => 'Zef::Repository::Ecosystems',
         options    => {
-          name        => 'fez',
+          name        => 'zef-p6c',
           auto-update => 1,
           mirrors     => ['http://32.zef.pm/'],
         },
@@ -34,10 +34,10 @@ multi MAIN('monkey-zef') is export {
   }
   $k = so $j<Repository>.grep: { $_<short-name> eq 'zef' };
   if $k {
-    say '>>= skipping zef, already installed.';
+    say '>>= Skipping zef ecosystem, already installed.';
   } else {
-    say '>>= zef mirror: this is where modules are uploaded by module authors using fez';
-    my $ok = prompt('>>= add zef mirror (y/n)? ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
+    say '>>= zef: This is where modules are uploaded by module authors using fez.';
+    my $ok = prompt('>>= Add zef ecosystem? (y/n) ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
     if $ok ~~ m{^y|yes$} {
       $j<Repository>.push: {
         short-name => 'zef',
