@@ -12,7 +12,6 @@ method bundle($location) {
 }
 
 method able {
-  my $p = run 'tar', '--version', :out, :err;
-  my $p2 = run 'gzip', '--version', :out, :err;
-  $p.exitcode == 0 && $p2.exitcode == 0;
+  my $p = run 'tar', '--help', :out, :err;
+  $p.exitcode == 0 && $p.out.slurp.contains: '-z';
 }

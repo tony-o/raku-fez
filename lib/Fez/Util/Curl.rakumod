@@ -23,5 +23,5 @@ method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
 }
 
 method able {
-  (run 'which', 'curl', :out, :err).out.slurp ne '';
+  (run 'curl', '--version', :out, :err).exitcode == 0;
 }
