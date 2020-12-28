@@ -7,7 +7,7 @@
   "perl":          "6.c",
   "license":       "Artistic-2.0",
   "meta-version":  "0",
-  "build-depends": ["LibraryMake"],
+  "build-depends": [],
   "depends":       ["NativeCall"],
   "provides": {
     "Fez": "lib/Fez.rakumod",
