@@ -1,31 +1,29 @@
 {
   "name":          "fez",
   "auth":          "zef:tony-o",
-  "version":       "0",
+  "version":       "2",
   "api":           "0",
   "description":   "one way to upload your dists to the masses.",
   "perl":          "6.c",
   "license":       "Artistic-2.0",
   "meta-version":  "0",
-  "build-depends": ["LibraryMake"],
+  "build-depends": [],
   "depends":       ["NativeCall"],
   "provides": {
     "Fez": "lib/Fez.rakumod",
-    "Fez::Util::PW": "lib/Fez/Util/PW.rakumod",
-    "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
-    "Fez::Util::Json": "lib/Fez/Util/Json.rakumod",
-    "Fez::Util::Git": "lib/Fez/Util/Git.rakumod",
-    "Fez::Util::Curl": "lib/Fez/Util/Curl.rakumod",
     "Fez::Util::Config": "lib/Fez/Util/Config.rakumod",
+    "Fez::Util::Curl": "lib/Fez/Util/Curl.rakumod",
+    "Fez::Util::Git": "lib/Fez/Util/Git.rakumod",
+    "Fez::Util::Json": "lib/Fez/Util/Json.rakumod",
+    "Fez::Util::Pass": "lib/Fez/Util/Pass.rakumod",
     "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
+    "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
     "Fez::Web": "lib/Fez/Web.rakumod",
     "Fez::CLI": "lib/Fez/CLI.rakumod",
     "Fez::Bundle": "lib/Fez/Bundle.rakumod"
   },
+  "source-url": "https://github.com/tony-o/raku-fez",
   "resources": [
-      "lib/libgetpw.so",
-      "lib/libgetpw.dylib",
-      "config.json"
-  ],
-    "source-url": "https://github.com/tony-o/raku-fez.git"
+    "config.json"
+  ]
 }
