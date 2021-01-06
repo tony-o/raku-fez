@@ -10,6 +10,10 @@ use Zef::Config;
 multi MAIN('monkey-zef') is export {
   my $conf-path = %*ENV<ZEF_CONFIG_PATH> // Zef::Config::guess-path();
   say '>>= i plan to patch: ' ~ $conf-path;
+  if ! $conf-path.IO.w {
+    say '=<< config unwritable! quitting..';
+    exit 255;
+  }
   my $j = from-j($conf-path.IO.slurp);
   my $k = so $j<Repository>.grep: { $_<short-name> eq 'zef-p6c' };
   my $c = 0;
