@@ -10,6 +10,10 @@ use Zef::Config;
 multi MAIN('monkey-zef') is export {
   my $conf-path = %*ENV<ZEF_CONFIG_PATH> // Zef::Config::guess-path();
   say '>>= i plan to patch: ' ~ $conf-path;
+  if ! $conf-path.IO.w {
+    say '=<< config unwritable! quitting..';
+    exit 255;
+  }
   my $j = from-j($conf-path.IO.slurp);
   my $k = so $j<Repository>.grep: { $_<short-name> eq 'zef-p6c' };
   my $c = 0;
@@ -96,10 +100,10 @@ multi MAIN('login') is export {
     exit 255;
   }
 
-  my %c = config;
-  %c<key> = $response<key>;
-  %c<un>  = $un;
-  write-config(%c);
+  write-to-user-config({
+    key => $response<key>,
+    un  => $un,
+  });
   say ">>= login successful, you can now upload dists";
 }
 
@@ -119,10 +123,10 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 
   #TODO: check for provides and resources matches in `lib` and `resources`
 
-  if $meta<auth>.substr(4) ne (config<un>//'<unset>') {
+  if $meta<auth>.substr(4) ne (config-value('un')//'<unset>') {
     printf "=<< \"%s\" does not match the username you last logged in with (%s),\n=<< you will need to login before uploading your dist\n\n",
            $meta<auth>.substr(4),
-           (config<un>//'unset');
+           (config-value('un')//'unset');
     exit 255 if $auth-mismatch-error;
   }
 
@@ -134,8 +138,8 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 }
 
 multi MAIN('upload', Str :$file = '') is export {
-  MAIN('login') unless config<key>;
-  if ! (config<key>//0) {
+  MAIN('login') unless config-value('key');
+  if ! (config-value('key')//0) {
     say '=<< you must login to upload';
     exit 255;
   }
@@ -153,7 +157,7 @@ multi MAIN('upload', Str :$file = '') is export {
   }
   my $response = get(
     '/upload',
-    headers => {'Authorization' => "Zef {config<key>}"},
+    headers => {'Authorization' => "Zef {config-value('key')}"},
   );
  
   my $upload = post(
@@ -183,7 +187,7 @@ multi MAIN(Bool :h(:$help)?) {
 
       FEZ_CONFIG            if you need to modify your config, set this env var
 
-    CONFIGURATION (using: { config-path })
+    CONFIGURATION (using: { user-config-path })
 
       Copy this to a cool location and write your own requestors/bundlers or
       ignore it and use the default curl/wget/git tools for great success.
