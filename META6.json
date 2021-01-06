@@ -22,7 +22,7 @@
     "Fez::CLI": "lib/Fez/CLI.rakumod",
     "Fez::Bundle": "lib/Fez/Bundle.rakumod"
   },
-  "source-url": "https://github.com/tony-o/raku-fez",
+  "source-url": "https://github.com/tony-o/raku-fez.git",
   "resources": [
     "config.json"
   ]
