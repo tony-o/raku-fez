@@ -3,8 +3,8 @@ unit package Fez::Web;
 use Fez::Util::Json;
 use Fez::Util::Config;
 
-my @handlers = |config<requestors>;
-my $uri      = config<host>;
+my @handlers = |config-value('requestors');
+my $uri      = config-value('host');
 
 my $handler = False;
 for @handlers -> $h {
