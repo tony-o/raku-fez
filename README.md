@@ -69,7 +69,7 @@ or, if there are errors:
 If you've forgotten your password, use this little guy.
 
 ```
-λ local:~$ raku -Ilib bin/fez reset-password
+λ local:~$ fez reset-password
 >>= Username: tony-o
 >>= A reset key was successfully requested, please check your email
 >>= New Password:
