@@ -31,10 +31,10 @@ multi MAIN('reset-password') is export {
     say "=<< password reset failed: {$response<message>}";
     exit 255;
   }
-  my %c = config;
-  %c<key> = $response<key>;
-  %c<un>  = $un;
-  write-config(%c);
+  write-to-user-config({
+    key => $response<key>,
+    un  => $un,
+  });
   say ">>= password reset successful, you now have a new key and can upload dists";
 }
 
