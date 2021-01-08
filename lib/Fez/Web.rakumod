@@ -18,7 +18,7 @@ for @handlers -> $h {
 die 'Unable to find a suitable handler for web (tried '~@handlers.join(', ')~')'
   unless $handler;
 
-multi get($endpoint, :%headers = ()) is export {
+multi get($endpoint, :%headers = { }) is export {
   my $out = $handler.get("{$endpoint.substr(0,4) eq 'http'??''!!$uri}$endpoint", :%headers);
   try {
     CATCH { default { $out; } }

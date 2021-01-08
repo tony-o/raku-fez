@@ -7,6 +7,37 @@ use Fez::Web;
 use Fez::Bundle;
 use Zef::Config;
 
+multi MAIN('reset-password') is export {
+  my $un = prompt('>>= Username: ') while ($un//'').chars < 3;
+  my $response = get(
+    '/init-password-reset?auth=' ~ $un.encode.decode("utf8").comb.map({
+      $_ ~~ m/^<[a..zA..Z0..9\-_.~]>$/ ?? $_ !! sprintf('%%%X', .ord)
+    }).join,
+  );
+  if ! $response<success>.so {
+    say '=<< There was an error communicating with the service, please';
+    say '    try again in a few minutes.';
+    exit 255;
+  }
+  say '>>= A reset key was successfully requested, please check your email';
+  my $key  = prompt('>>= What is the key in your email? ') while ($key//'') eq '';
+  my $pass = getpass('>>= New Password: ') while ($pass//'').chars < 8;
+  $response = post('/password-reset', data => {
+    auth     => $un,
+    key      => $key,
+    password => $pass,
+  });
+  if ! $response<success>.so {
+    say "=<< password reset failed: {$response<message>}";
+    exit 255;
+  }
+  my %c = config;
+  %c<key> = $response<key>;
+  %c<un>  = $un;
+  write-config(%c);
+  say ">>= password reset successful, you now have a new key and can upload dists";
+}
+
 multi MAIN('monkey-zef') is export {
   my $conf-path = %*ENV<ZEF_CONFIG_PATH> // Zef::Config::guess-path();
   say '>>= i plan to patch: ' ~ $conf-path;
