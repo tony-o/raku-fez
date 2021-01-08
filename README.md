@@ -24,13 +24,6 @@ zef install fez
 
 Notes: fez needs to be *built*, this is to conceal your password whenever you type it in.  PR welcome for making this work with windows.
 
-### monkey-zef
-
-You do NOT need to be logged in for this command. Use this command to make to update your existing zef configuration to use fez and zef mirrors.
-
-* fez mirror: this is an automated p6c mirror with the `*` versions of anything stripped out (as `*` supercedes _everything_, this is to avoid a headache)
-* zef mirror: this is where you upload/download from when you and other module authors use the `upload` method below.
-
 ### register
 
 ```
@@ -70,3 +63,24 @@ or, if there are errors:
 =<< "tonyo" does not match the username you last logged in with (tony-o),
 =<< you will need to login before uploading your dist
 ```
+
+### reset password
+
+If you've forgotten your password, use this little guy.
+
+```
+λ local:~$ raku -Ilib bin/fez reset-password
+>>= Username: tony-o
+>>= A reset key was successfully requested, please check your email
+>>= New Password:
+>>= What is the key in your email? abcdef...
+>>= password reset successful, you now have a new key and can upload dists
+```
+
+### monkey-zef
+
+You do NOT need to be logged in for this command. Use this command to make to update your existing zef configuration to use fez and zef mirrors.
+
+* fez mirror: this is an automated p6c mirror with the `*` versions of anything stripped out (as `*` supercedes _everything_, this is to avoid a headache)
+* zef mirror: this is where you upload/download from when you and other module authors use the `upload` method below.
+
