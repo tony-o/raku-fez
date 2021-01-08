@@ -212,6 +212,8 @@ multi MAIN(Bool :h(:$help)?) {
       register              registers you up for a new account
       login                 logs you in and saves your key info
       upload                creates a distribution tarball and uploads
+      reset-password        initiates a password reset using the email
+                            that you registered with
       monkey-zef            modifies your zef configuration for fez repos
 
     ENV OPTIONS
