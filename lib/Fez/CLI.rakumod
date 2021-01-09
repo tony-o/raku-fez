@@ -174,19 +174,23 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
     say '=<< you must login to upload';
     exit 255;
   }
+  my %data;
   if ($name//'') eq '' && ($website//'') eq '' && ($email//'') eq '' {
-    $name    = prompt('>>= what would you like your display name to show? ').trim;
-    $website = prompt('>>= what\'s your website? ').trim;
-    $email   = prompt('>>= public email address? ').trim;
+    %data<name>    = prompt('>>= what would you like your display name to show? ').trim;
+    %data<website> = prompt('>>= what\'s your website? ').trim;
+    %data<email>   = prompt('>>= public email address? ').trim;
+  } else {
+    %data<name> = $name if ($name//'') ne '';
+    %data<website> = $website if ($website//'') ne '';
+    %data<email> = $email if ($email//'') ne '';
+  }
+  for %data.keys {
+    %data{$_}:delete if %data{$_} eq '';
   }
   my $response = post(
     '/update-meta',
     headers => {'Authorization' => "Zef {config-value('key')}"},
-    data    => {
-      ( ($name//'')    ne '' ?? (name => $name) !! ()),
-      ( ($website//'') ne '' ?? (website => $website) !! ()),
-      ( ($email//'')   ne '' ?? (email => $email)   !! ()),
-    },
+    :%data,
   );
   if ! $response<success>.so {
     say $response;
