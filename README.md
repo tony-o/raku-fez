@@ -9,6 +9,8 @@ fez is the command line tool used to manage your ecosystem user/pass.
 * login
 * register
 * upload
+* reset-password
+* meta
 * monkey-zef
 
 ### todo:
@@ -44,6 +46,18 @@ This is not necessary if you've just registered but you will eventually have to 
 >>= Username: tony-o
 >>= Password:
 >>= login successful, you can now upload dists
+```
+
+### meta
+
+Update your meta info - this information is public.
+
+```
+λ local:~$ fez meta
+>>= what would you like your display name to show? tony o
+>>= what's your website? DEATHBYPERL6.com
+>>= public email address? xxxx
+=<< your meta info has been updated
 ```
 
 ### upload
