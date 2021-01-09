@@ -183,9 +183,9 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
     '/update-meta',
     headers => {'Authorization' => "Zef {config-value('key')}"},
     data    => {
-      ( ($name//'')    ne '' ?? :$name    !! ()),
-      ( ($website//'') ne '' ?? :$website !! ()),
-      ( ($email//'')   ne '' ?? :$email   !! ()),
+      ( ($name//'')    ne '' ?? (name => $name) !! ()),
+      ( ($website//'') ne '' ?? (website => $website) !! ()),
+      ( ($email//'')   ne '' ?? (email => $email)   !! ()),
     },
   );
   if ! $response<success>.so {
