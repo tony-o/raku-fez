@@ -28,21 +28,21 @@ multi MAIN('reset-password') is export {
     password => $pass,
   });
   if ! $response<success>.so {
-    say "=<< password reset failed: {$response<message>}";
+    say "=<< Password reset failed: {$response<message>}";
     exit 255;
   }
   write-to-user-config({
     key => $response<key>,
     un  => $un,
   });
-  say ">>= password reset successful, you now have a new key and can upload dists";
+  say ">>= Password reset successful, you now have a new key and can upload dists";
 }
 
 multi MAIN('monkey-zef') is export {
   my $conf-path = %*ENV<ZEF_CONFIG_PATH> // Zef::Config::guess-path();
-  say '>>= i plan to patch: ' ~ $conf-path;
+  say '>>= Plan to patch: ' ~ $conf-path;
   if ! $conf-path.IO.w {
-    say '=<< config unwritable! quitting..';
+    say '=<< Config unwritable! quitting..';
     exit 255;
   }
   my $j = from-j($conf-path.IO.slurp);
@@ -91,7 +91,7 @@ multi MAIN('monkey-zef') is export {
     $conf-path.IO.spurt(to-j($j));
     say '>>= changes saved to zef config';
   } else {
-    say '>>= no changes made';
+    say '>>= No changes made';
   }
 }
 
@@ -107,10 +107,10 @@ multi MAIN('register') is export {
   );
 
   if ! $response<success>.so {
-    say "=<< registration failed: {$response<message>}";
+    say "=<< Registration failed: {$response<message>}";
     exit 255;
   }
-  say ">>= registration successful, requesting auth key";
+  say ">>= Registration successful, requesting auth key";
   my $*USERNAME = $un;
   my $*PASSWORD = $pw;
   MAIN('login');
@@ -135,7 +135,7 @@ multi MAIN('login') is export {
     key => $response<key>,
     un  => $un,
   });
-  say ">>= login successful, you can now upload dists";
+  say ">>= Login successful, you can now upload dists";
 }
 
 multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
@@ -171,14 +171,14 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
 multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    say '=<< you must login to upload';
+    say '=<< You must login to change your info';
     exit 255;
   }
   my %data;
   if ($name//'') eq '' && ($website//'') eq '' && ($email//'') eq '' {
-    %data<name>    = prompt('>>= what would you like your display name to show? ').trim;
-    %data<website> = prompt('>>= what\'s your website? ').trim;
-    %data<email>   = prompt('>>= public email address? ').trim;
+    %data<name>    = prompt('>>= What would you like your display name to show? ').trim;
+    %data<website> = prompt('>>= What\'s your website? ').trim;
+    %data<email>   = prompt('>>= Public email address? ').trim;
   } else {
     %data<name> = $name if ($name//'') ne '';
     %data<website> = $website if ($website//'') ne '';
@@ -194,16 +194,16 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
   );
   if ! $response<success>.so {
     say $response;
-    say '=<< there was an error, please try again in a few minutes';
+    say '=<< There was an error, please try again in a few minutes';
     exit 255;
   }
-  say '=<< your meta info has been updated';
+  say '=<< Your meta info has been updated';
 }
 
 multi MAIN('upload', Str :$file = '') is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    say '=<< you must login to upload';
+    say '=<< You must login to upload';
     exit 255;
   }
   my $fn = $file;
