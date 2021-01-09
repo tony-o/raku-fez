@@ -168,6 +168,34 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
   printf ">>= %s looks OK\n", $auth;
 }
 
+multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+  MAIN('login') unless config-value('key');
+  if ! (config-value('key')//0) {
+    say '=<< you must login to upload';
+    exit 255;
+  }
+  if ($name//'') eq '' && ($website//'') eq '' && ($email//'') eq '' {
+    $name    = prompt('>>= what would you like your display name to show? ').trim;
+    $website = prompt('>>= what\'s your website? ').trim;
+    $email   = prompt('>>= public email address? ').trim;
+  }
+  my $response = post(
+    '/update-meta',
+    headers => {'Authorization' => "Zef {config-value('key')}"},
+    data    => {
+      ( ($name//'')    ne '' ?? :$name    !! ()),
+      ( ($website//'') ne '' ?? :$website !! ()),
+      ( ($email//'')   ne '' ?? :$email   !! ()),
+    },
+  );
+  if ! $response<success>.so {
+    say $response;
+    say '=<< there was an error, please try again in a few minutes';
+    exit 255;
+  }
+  say '=<< your meta info has been updated';
+}
+
 multi MAIN('upload', Str :$file = '') is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
@@ -212,6 +240,7 @@ multi MAIN(Bool :h(:$help)?) {
       register              registers you up for a new account
       login                 logs you in and saves your key info
       upload                creates a distribution tarball and uploads
+      meta                  update your public meta info (website, email, name)
       reset-password        initiates a password reset using the email
                             that you registered with
       monkey-zef            modifies your zef configuration for fez repos
