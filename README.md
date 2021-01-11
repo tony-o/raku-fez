@@ -6,6 +6,8 @@ fez is the command line tool used to manage your ecosystem user/pass.
 
 ### current functionality:
 
+![](http://161.35.142.50/badge/fez-test)
+
 * login
 * register
 * upload
@@ -17,6 +19,7 @@ fez is the command line tool used to manage your ecosystem user/pass.
 
 * plugin management
 * command extensions via plugins
+
 
 ### register
 

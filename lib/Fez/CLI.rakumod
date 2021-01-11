@@ -164,7 +164,25 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
   my $auth = $meta<name>
            ~ ':ver<'  ~ $ver ~ '>'
            ~ ':auth<' ~ $meta<auth>.subst(/\</, '\\<').subst(/\>/, '\\>') ~ '>';
-  
+
+  if $auth-mismatch-error {
+    my $uri = $meta<name>.comb[0].uc         ~ '/' ~
+              $meta<name>.comb[1..2].join.uc ~ '/' ~
+              $meta<name>.uc ~ '/index.json';
+    my @m;
+    try {
+      CATCH { default { .say; } }
+      @m = get("http://360.zef.pm/$uri");
+    };
+    for @m -> $rmeta {
+      if $meta<auth> eq $rmeta<auth>
+      && $ver eq ($rmeta<ver>//$rmeta<vers>//$rmeta<version>) {
+        printf "=<< %s version(%s) appears to exist\n", $meta<name>, $ver;
+        exit 255;
+      }
+    }
+  }
+
   printf ">>= %s looks OK\n", $auth;
 }
 
@@ -193,7 +211,6 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
     :%data,
   );
   if ! $response<success>.so {
-    say $response;
     say '=<< There was an error, please try again in a few minutes';
     exit 255;
   }
@@ -218,11 +235,12 @@ multi MAIN('upload', Str :$file = '') is export {
       $fn = bundle('.'.IO.absolute);
     };
   }
+
   my $response = get(
     '/upload',
     headers => {'Authorization' => "Zef {config-value('key')}"},
   );
- 
+
   my $upload = post(
      $response<key>,
      :method<PUT>,
@@ -236,7 +254,7 @@ multi MAIN(Bool :h(:$help)?) {
     Fez - Raku / Perl6 package utility
 
     USAGE
-    
+
       fez command [args]
 
     COMMANDS
