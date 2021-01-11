@@ -18,14 +18,6 @@ fez is the command line tool used to manage your ecosystem user/pass.
 * plugin management
 * command extensions via plugins
 
-### building
-
-```
-zef install fez
-```
-
-Notes: fez needs to be *built*, this is to conceal your password whenever you type it in.  PR welcome for making this work with windows.
-
 ### register
 
 ```
