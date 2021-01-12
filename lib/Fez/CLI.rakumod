@@ -213,12 +213,12 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
     say '>>= Nothing to update';
     exit 0;
   }
-  my $response = post(
+  my $response = try post(
     '/update-meta',
     headers => {'Authorization' => "Zef {config-value('key')}"},
     :%data,
   );
-  if ! $response<success>.so {
+  if ! ($response<success>//False).so {
     say '=<< There was an error, please try again in a few minutes';
     exit 255;
   }
