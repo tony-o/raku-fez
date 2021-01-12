@@ -7,6 +7,10 @@ use Fez::Web;
 use Fez::Bundle;
 use Zef::Config;
 
+multi MAIN(Bool :v(:$version) where .so) {
+  say '>>= fez version: ' ~ $?DISTRIBUTION.meta<ver version>.first(*.so);
+}
+
 multi MAIN('reset-password') is export {
   my $un = prompt('>>= Username: ') while ($un//'').chars < 3;
   my $response = get(
@@ -204,6 +208,10 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
   }
   for %data.keys {
     %data{$_}:delete if %data{$_} eq '';
+  }
+  unless +%data.keys {
+    say '>>= Nothing to update';
+    exit 0;
   }
   my $response = post(
     '/update-meta',
