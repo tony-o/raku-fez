@@ -1,0 +1,1 @@
+regexp: 'version:' \s+ \S+ \s* $$

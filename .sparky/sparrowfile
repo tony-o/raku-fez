@@ -1,0 +1,32 @@
+say tags().perl;
+
+directory "scm";
+
+if  tags()<SCM_URL> {
+
+  git-scm tags()<SCM_URL>, %(
+    to => "scm",
+    branch => tags<SCM_BRANCH>
+  );
+
+} else {
+
+  git-scm "https://github.com/tony-o/raku-fez.git", %(
+    to => "scm",
+    branch => "master"
+  );
+
+}
+
+bash "git log --name-status HEAD^..HEAD", %(
+  cwd => "{%*ENV<PWD>}/scm"
+);
+
+bash "zef install . --force-install", %(
+  cwd => "{%*ENV<PWD>}/scm"
+);
+
+say "running integration tests with Tomty\n====================================\n";
+
+shell "cd {%*ENV<PWD>}/scm/.sparky && {%*ENV<HOME>}/.raku/bin/tomty --all --verbose";
+
