@@ -118,6 +118,7 @@ multi MAIN('register') is export {
   my $*USERNAME = $un;
   my $*PASSWORD = $pw;
   MAIN('login');
+  MAIN('meta');
 }
 
 multi MAIN('login') is export {
