@@ -5,7 +5,6 @@ use Fez::Util::Json;
 use Fez::Util::Config;
 use Fez::Web;
 use Fez::Bundle;
-use Zef::Config;
 
 multi MAIN(Bool :v(:$version) where .so) {
   say '>>= fez version: ' ~ $?DISTRIBUTION.meta<ver version>.first(*.so);
@@ -40,63 +39,6 @@ multi MAIN('reset-password') is export {
     un  => $un,
   });
   say ">>= Password reset successful, you now have a new key and can upload dists";
-}
-
-multi MAIN('monkey-zef') is export {
-  my $conf-path = %*ENV<ZEF_CONFIG_PATH> // Zef::Config::guess-path();
-  say '>>= Plan to patch: ' ~ $conf-path;
-  if ! $conf-path.IO.w {
-    say '=<< Config unwritable! quitting..';
-    exit 255;
-  }
-  my $j = from-j($conf-path.IO.slurp);
-  my $k = so $j<Repository>.grep: { $_<short-name> eq 'zef-p6c' };
-  my $c = 0;
-  if $k {
-    say '>>= Skipping zef-p6c ecosystem, already installed.';
-  } else {
-    say '>>= zef-p6c: A mirror of the p6c ecosystem.';
-    my $ok = prompt('>>= Add zef-p6c ecosystem? (y/n) ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
-    if $ok ~~ m{^y|yes$} {
-      $j<Repository>.push: {
-        short-name => 'zef-p6c',
-        enabled    => 1,
-        module     => 'Zef::Repository::Ecosystems',
-        options    => {
-          name        => 'zef-p6c',
-          auto-update => 1,
-          mirrors     => ['http://32.zef.pm/'],
-        },
-      };
-      $c++;
-    }
-  }
-  $k = so $j<Repository>.grep: { $_<short-name> eq 'zef' };
-  if $k {
-    say '>>= Skipping zef ecosystem, already installed.';
-  } else {
-    say '>>= zef: This is where modules are uploaded by module authors using fez.';
-    my $ok = prompt('>>= Add zef ecosystem? (y/n) ') while ($ok//'') !~~ m{^(y|yes|n|no)$};
-    if $ok ~~ m{^y|yes$} {
-      $j<Repository>.push: {
-        short-name => 'zef',
-        enabled    => 1,
-        module     => 'Zef::Repository::Ecosystems',
-        options    => {
-          name        => 'zef',
-          auto-update => 1,
-          mirrors     => ['http://360.zef.pm/'],
-        },
-      };
-      $c++;
-    }
-  }
-  if $c {
-    $conf-path.IO.spurt(to-j($j));
-    say '>>= changes saved to zef config';
-  } else {
-    say '>>= No changes made';
-  }
 }
 
 multi MAIN('register') is export {

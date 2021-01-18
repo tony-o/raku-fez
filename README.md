@@ -13,7 +13,6 @@ fez is the command line tool used to manage your ecosystem user/pass.
 * upload
 * reset-password
 * meta
-* monkey-zef
 
 ### todo:
 
@@ -85,11 +84,3 @@ If you've forgotten your password, use this little guy.
 >>= What is the key in your email? abcdef...
 >>= password reset successful, you now have a new key and can upload dists
 ```
-
-### monkey-zef
-
-You do NOT need to be logged in for this command. Use this command to make to update your existing zef configuration to use fez and zef mirrors.
-
-* fez mirror: this is an automated p6c mirror with the `*` versions of anything stripped out (as `*` supercedes _everything_, this is to avoid a headache)
-* zef mirror: this is where you upload/download from when you and other module authors use the `upload` method below.
-
