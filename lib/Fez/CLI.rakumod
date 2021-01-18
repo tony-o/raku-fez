@@ -121,7 +121,7 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
       CATCH { default { .say; } }
       @m = get("http://360.zef.pm/$uri");
     };
-    for @m -> $rmeta {
+    for @m.grep(*.so) -> $rmeta {
       if $meta<auth> eq $rmeta<auth>
       && $ver eq ($rmeta<ver>//$rmeta<vers>//$rmeta<version>) {
         printf "=<< %s version(%s) appears to exist\n", $meta<name>, $ver;
