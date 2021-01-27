@@ -19,7 +19,7 @@ jobs:
       - run:
           name: publish
           command: |
-              git rev-parse --abbrev-ref HEAD
-              if [[ "$CIRCLE_BRANCH" = "master" ]]; then
-                exit 1
+              if [[ "$CIRCLE_BRANCH" = "circle-tests" ]]; then
+                # this will fail to index
+                raku -I. -e 'require ::("Fez::CLI"); my $*USERNAME = %*ENV<FEZ_UN>; my $*PASSWORD = %*ENV<FEZ_PW>; ::("Fez::CLI")::<&MAIN>("upload");'
               fi
