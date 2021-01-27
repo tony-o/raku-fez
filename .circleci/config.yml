@@ -20,6 +20,6 @@ jobs:
           name: publish
           when:
             and:
-              - equal: [circle-tests, << pipeline.git.branch >> ]
+              - equal: [ 'circle-tests', << pipeline.git.branch >> ]
           command: |
               git rev-parse --abbrev-ref HEAD
