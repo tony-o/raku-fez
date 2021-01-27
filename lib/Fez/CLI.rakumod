@@ -118,7 +118,9 @@ multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
               $meta<name>.uc ~ '/index.json';
     my @m;
     try {
-      CATCH { default { .say; } }
+      CATCH { default {
+        printf "=<< Error retrieving \"%s\", unable to verify if version exists.\n", $uri;
+      } }
       @m = get("http://360.zef.pm/$uri");
     };
     for @m.grep(*.so) -> $rmeta {
