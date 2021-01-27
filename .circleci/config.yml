@@ -19,6 +19,6 @@ jobs:
       - run:
           name: publish
           command: |
-              if [[ "$(git rev-parse --abbrev-ref HEAD)" == "master" ]]; then
+              if [[ "$(git rev-parse --abbrev-ref HEAD)" == "circle-tests" ]]; then
                 echo 'hi to my little fiend!'
               fi
