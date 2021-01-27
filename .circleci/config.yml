@@ -21,7 +21,7 @@ jobs:
           command: |
               if [[ "$CIRCLE_BRANCH" = "circle-tests" ]]; then
                 # this will fail to index
-                raku -Ilib -e 'require ::("Fez::CLI"); $*USERNAME = %*ENV<FEZ_UN>; say $*USERNAME; $*PASSWORD = %*ENV<FEZ_PW>; ::("Fez::CLI")::<&MAIN>("upload");';
+                raku -Ilib -e 'require ::("Fez::CLI"); our $*USERNAME = %*ENV<FEZ_UN>; say $*USERNAME; our $*PASSWORD = %*ENV<FEZ_PW>; ::("Fez::CLI")::<&MAIN>("upload");';
                 ls sdist/
               else
                 echo 'publish only master!'
