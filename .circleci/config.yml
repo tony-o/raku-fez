@@ -19,6 +19,7 @@ jobs:
       - run:
           name: publish
           command: |
+              git rev-parse --abbrev-ref HEAD
               if [[ "$(git rev-parse --abbrev-ref HEAD)" == "circle-tests" ]]; then
                 exit 1
               fi
