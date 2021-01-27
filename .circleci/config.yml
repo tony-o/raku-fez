@@ -1,0 +1,18 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: tonyodell/rakudo-nightly:latest
+
+    working_directory: ~
+
+    steps:
+      - checkout
+      - run: 
+          name: install build deps
+          command: |
+              zef install --deps-only .
+      - run:
+          name: test 
+          command: |
+              zef test .

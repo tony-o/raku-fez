@@ -2,4 +2,5 @@
 .precomp
 sdist/
 Makefile
+articles/
 resources/lib
