@@ -16,3 +16,9 @@ jobs:
           name: test 
           command: |
               zef test .
+      - run:
+          name: publish
+          command: |
+              if [[ "$(git rev-parse --abbrev-ref HEAD)" == "master" ]]; then
+                echo 'hi to my little fiend!'
+              fi
