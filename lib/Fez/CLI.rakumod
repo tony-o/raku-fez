@@ -98,7 +98,12 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
     say '=<< Unable to find META6.json' ~ (' in file ' ~ $file if $file);
     exit 255;
   };
-  my $error = sub ($e) { say "=<< $e"; exit 255; };
+  my $error = sub ($e) {
+    say "=<< $e";
+    say '=<< If you\'re using git, make sure to commit your changes.';
+    printf "=<< To inspect the file, check: %s\n", $file.IO.resolve.relative;
+    exit 255;
+  }
 
   my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
   $error('name should be a value') unless $meta<name>;
