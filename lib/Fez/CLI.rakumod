@@ -85,9 +85,17 @@ multi MAIN('login') is export {
   say ">>= Login successful, you can now upload dists";
 }
 
-multi MAIN('checkbuild', Bool :$auth-mismatch-error = False) is export {
-  my $meta = try { from-j('./META6.json'.IO.slurp) } or do {
-    say 'Unable to find META6.json';
+multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is export {
+  my $meta = try {
+    if $file eq '' {
+      from-j('./META6.json'.IO.slurp)
+    } else {
+      my $proc = run 'tar', 'xOf', $file, 'META6.json', :out, :err;
+      die if $proc.exitcode != 0;
+      from-j($proc.out.slurp);
+    }
+  } or do {
+    say '=<< Unable to find META6.json' ~ (' in file ' ~ $file if $file);
     exit 255;
   };
   my $error = sub ($e) { say "=<< $e"; exit 255; };
@@ -181,13 +189,11 @@ multi MAIN('upload', Str :$file = '') is export {
     say "Cannot find $file";
     exit 255;
   }
-  if '' eq $file {
-    MAIN('checkbuild', :auth-mismatch-error);
-    try {
-      CATCH { default { printf "=<< ERROR: %s\n", .message; exit 255; } }
-      $fn = bundle('.'.IO.absolute);
-    };
-  }
+  try {
+    CATCH { default { printf "=<< ERROR: %s\n", .message; exit 255; } }
+    $fn = bundle('.'.IO.absolute);
+  };
+  MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error);
 
   my $response = get(
     '/upload',
