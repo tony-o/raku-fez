@@ -86,23 +86,39 @@ multi MAIN('login') is export {
 }
 
 multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is export {
+  my $skip-meta;
+  require ::('Fez::Util::Tar');
   my $meta = try {
     if $file eq '' {
-      from-j('./META6.json'.IO.slurp)
+      say '>>= Inspecting ./META6.json';
+      from-j('./META6.json'.IO.slurp);
     } else {
-      my $proc = run 'tar', 'xOf', $file, 'META6.json', :out, :err;
-      die if $proc.exitcode != 0;
-      from-j($proc.out.slurp);
+      printf ">>= Looking in \"%s\" for META6.json\n", $file.IO.resolve.relative;
+      if ::('Fez::Util::Tar').able {
+        my $proc = run 'tar', 'xOf', $file, 'META6.json', :out, :err;
+        die if $proc.exitcode != 0;
+        from-j($proc.out.slurp);
+      } else {
+        $skip-meta = True;
+        False;
+      }
     }
   } or do {
-    say '=<< Unable to find META6.json' ~ (' in file ' ~ $file if $file);
-    exit 255;
+    if $skip-meta {
+      say '=<< Unable to verify meta, no tar found.';
+    } else {
+      say '=<< Unable to find META6.json';
+      exit 255;
+    }
   };
-  my $error = sub ($e) {
+  return if $skip-meta;
+  my $error = sub ($e, Bool :$exit = True) {
     say "=<< $e";
-    say '=<< If you\'re using git, make sure to commit your changes.' if '.git'.IO ~~ :d;
-    printf "=<< To inspect the file, check: %s\n", $file.IO.resolve.relative;
-    exit 255;
+    if $exit {
+      say '=<< If you\'re using git, make sure to commit your changes.' if '.git'.IO ~~ :d;
+      printf "=<< To inspect the file, check: %s\n", $file.IO.resolve.relative if $file;
+      exit 255;
+    }
   }
 
   my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
@@ -112,7 +128,66 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
   $error('auth should start with "zef:"') unless $meta<auth>.substr(0,4) eq 'zef:';
   $error('ver cannot be "*"') if $ver.trim eq '*';
 
-  #TODO: check for provides and resources matches in `lib` and `resources`
+  my @files    = $file ?? ::('Fez::Util::Tar').ls($file) !! do {
+    my @xs = |['lib'.IO, 'resources'.IO];
+    my @l;
+    while @xs {
+      for @xs.pop.dir -> $f {
+        @l.push: $f;
+        @xs.push($f) if $f.d;
+      }
+    }
+    |@l;
+  };
+  if @files[0] ~~ Failure {
+    $error('Unable to list tar files', :!exit);
+  } else {
+    my @provides = $meta<provides>.values;
+    my @resources = $meta<resources>;
+    my %check;
+    for @files.grep({$_ ~~ m/^'/'**0..1'lib'/ && $_ ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
+      %check{$f}++;
+    }
+    for @provides -> $f {
+      %check{$f}--;
+    }
+    for %check.keys -> $f {
+      %check{$f}:delete if %check{$f} == 0;
+      next unless %check{$f};
+      $error(
+        sprintf(
+          "File \"%s\" in %s not found in %s",
+          $f,
+          %check{$f} == -1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
+          %check{$f} ==  1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
+        ),
+        :!exit
+      );
+    }
+    say '>>= meta<provides> looks OK' unless %check.keys;
+
+    %check = ();
+    for @files.grep({$_ ~~ m/^'/'**0..1'resources'/ && $_ !~~ m/'/'$/}) -> $f {
+      %check{S/^'/'// with $f}++;
+    }
+    for @resources -> $f {
+      %check{"resources/{$f}"}--;
+    }
+    for %check.keys -> $f {
+      %check{$f}:delete if %check{$f} == 0;
+      next unless %check{$f};
+      $error(
+        sprintf(
+          "File \"%s\" in %s not found in %s",
+          $f,
+          %check{$f} == -1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
+          %check{$f} ==  1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
+        ),
+        :!exit
+      );
+    }
+    say '>>= meta<resources> looks OK' unless %check.keys;
+  }
 
   if $meta<auth>.substr(4) ne (config-value('un')//'<unset>') {
     printf "=<< \"%s\" does not match the username you last logged in with (%s),\n=<< you will need to login before uploading your dist\n\n",

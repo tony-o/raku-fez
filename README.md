@@ -27,6 +27,10 @@ fez is the command line tool used to manage your ecosystem user/pass.
 >>= Password:
 >>= registration successful, requesting auth key
 >>= login successful, you can now upload dists
+>>= what would you like your display name to show? tony o
+>>= what's your website? DEATHBYPERL6.com
+>>= public email address? xxxx
+=<< your meta info has been updated
 ```
 
 ### login
@@ -82,3 +86,41 @@ If you've forgotten your password, use this little guy.
 >>= What is the key in your email? abcdef...
 >>= password reset successful, you now have a new key and can upload dists
 ```
+
+### checkbuild
+
+This is the check fez runs when you run `fez upload`
+
+```
+$ fez checkbuild
+>>= Inspecting ./META6.json
+>>= meta<provides> looks OK
+>>= meta<resources> looks OK
+>>= fez:ver<11>:auth<zef:tony-o> looks OK
+```
+
+-or if you have errors-
+
+```
+$ fez checkbuild
+>>= Inspecting ./META6.json
+>>= meta<provides> looks OK
+=<< File "resources/config.json" in dir not found in meta<resources>
+>>= fez:ver<11>:auth<zef:tony-o> looks OK
+```
+
+If you're rolling your own tarballs then you can specify the file to checkout with `--file=`, please keep in mind that checkbuild requires access to a tar that can work with compression for _some_ of these checks.
+
+## license
+
+[![License: Artistic-2.0](https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg)](https://opensource.org/licenses/Artistic-2.0)
+
+## authors
+
+@[tony-o](https://github.com/tony-o)
+
+@[patrickbr](https://github.com/patrickbkr)
+
+@[JJ](https://github.com/JJ)
+
+@[melezhik](https://github.com/melezhik)
