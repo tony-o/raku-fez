@@ -24,5 +24,5 @@ method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
 }
 
 method able {
-  (run 'which', 'wget', :out, :err).out.slurp ne '';
+  (run 'wget', '--version', :out, :err).exitcode == 0;
 }

@@ -6,17 +6,21 @@ use Fez::Util::Config;
 my @handlers = |config-value('requestors');
 my $uri      = config-value('host');
 
-my $handler = False;
-for @handlers -> $h {
-  my $caught = False;
-  CATCH { $caught = True; .resume; }
-  require ::("$h");
-  next if $caught;
-  next unless ::("$h").able;
-  $handler = ::("$h").new;
-}
-die 'Unable to find a suitable handler for web (tried '~@handlers.join(', ')~')'
-  unless $handler;
+state $handler = do {
+  my $handler = @handlers.map({
+    my ($h, $handler) = $_;
+    try require ::($h.Str);
+    if try ::($h.Str) !~~ Failure {
+      $handler = ::($h.Str).new;
+      $handler = False unless $handler.^can('able')
+                           && $handler.able;
+    }
+    $handler;
+  }).grep(*.so).first;
+  die 'Unable to find a suitable handler for web (tried '~@handlers.join(', ')~')'
+    unless $handler;
+  $handler;
+};
 
 multi get($endpoint, :%headers = { }) is export {
   my $out = $handler.get("{$endpoint.substr(0,4) eq 'http'??''!!$uri}$endpoint", :%headers);
