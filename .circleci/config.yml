@@ -20,6 +20,6 @@ jobs:
           name: publish
           command: |
               git rev-parse --abbrev-ref HEAD
-              if [[ "$CIRCLE_BRANCH" = "circle-tests" ]]; then
+              if [[ "$CIRCLE_BRANCH" = "master" ]]; then
                 exit 1
               fi
