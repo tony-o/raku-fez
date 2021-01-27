@@ -100,7 +100,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
   };
   my $error = sub ($e) {
     say "=<< $e";
-    say '=<< If you\'re using git, make sure to commit your changes.';
+    say '=<< If you\'re using git, make sure to commit your changes.' if '.git'.IO ~~ :d;
     printf "=<< To inspect the file, check: %s\n", $file.IO.resolve.relative;
     exit 255;
   }
