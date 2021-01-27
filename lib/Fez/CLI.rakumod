@@ -128,6 +128,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
   $error('auth should start with "zef:"') unless $meta<auth>.substr(0,4) eq 'zef:';
   $error('ver cannot be "*"') if $ver.trim eq '*';
 
+  my $errors;
   my @files    = $file ?? ::('Fez::Util::Tar').ls($file) !! do {
     my @xs = |['lib'.IO, 'resources'.IO];
     my @l;
@@ -165,6 +166,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
       );
     }
     say '>>= meta<provides> looks OK' unless %check.keys;
+    $errors++ if %check.keys;
 
     %check = ();
     for @files.grep({$_ ~~ m/^'/'**0..1'resources'/ && $_ !~~ m/'/'$/}) -> $f {
@@ -187,6 +189,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
       );
     }
     say '>>= meta<resources> looks OK' unless %check.keys;
+    $errors++ if %check.keys;
   }
 
   if $meta<auth>.substr(4) ne (config-value('un')//'<unset>') {
@@ -220,7 +223,10 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
     }
   }
 
-  printf ">>= %s looks OK\n", $auth;
+  printf ">>= %s looks OK\n", $auth unless $errors;
+  printf ">>= %s could use some sprucing up\n", $auth if $errors;
+  return False if $errors;
+  True;
 }
 
 multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
@@ -266,14 +272,20 @@ multi MAIN('upload', Str :$file = '') is export {
   }
   my $fn = $file;
   if '' ne $file && ! $file.IO.f {
-    say "Cannot find $file";
+    say "=<< Cannot find $file";
     exit 255;
   }
   try {
     CATCH { default { printf "=<< ERROR: %s\n", .message; exit 255; } }
     $fn = bundle('.'.IO.absolute);
   };
-  MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error);
+  if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
+    my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ') !~~ any('y'|'yes'|'n'|'no'|'');
+    if $resp ~~ any('n'|'no'|'') {
+      say '=<< Ok, exiting';
+      exit 255;
+    }
+  }
 
   my $response = get(
     '/upload',

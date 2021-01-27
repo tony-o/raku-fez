@@ -106,7 +106,7 @@ $ fez checkbuild
 >>= Inspecting ./META6.json
 >>= meta<provides> looks OK
 =<< File "resources/config.json" in dir not found in meta<resources>
->>= fez:ver<11>:auth<zef:tony-o> looks OK
+>>= fez:ver<11>:auth<zef:tony-o> could use some sprucing up
 ```
 
 If you're rolling your own tarballs then you can specify the file to checkout with `--file=`, please keep in mind that checkbuild requires access to a tar that can work with compression for _some_ of these checks.
