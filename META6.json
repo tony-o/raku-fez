@@ -20,7 +20,7 @@
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
     "Fez::Web": "lib/Fez/Web.rakumod",
     "Fez::CLI": "lib/Fez/CLI.rakumod",
-    "Fez::Bundle": "lib/Fez/Bundle.rakumo"
+    "Fez::Bundle": "lib/Fez/Bundle.rakumod"
   },
   "source-url": "https://github.com/tony-o/raku-fez.git",
   "resources": [
