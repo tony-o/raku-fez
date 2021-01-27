@@ -1,6 +1,6 @@
 {
   "name":          "fez",
-  "auth":          "auth:tony-o",
+  "auth":          "zef:tony-o",
   "version":       "11",
   "api":           "0",
   "description":   "one way to upload your dists to the masses.",
