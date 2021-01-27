@@ -16,12 +16,10 @@ jobs:
           name: test 
           command: |
               zef test .
-      -  when:
-          condition:
-            equal: [ 'circle-tests', '<< pipeline.git.branch >>' ]
-          run:
-            steps:
-              - run:
-                name: publish
-                command: |
-                    git rev-parse --abbrev-ref HEAD
+      - run:
+          name: publish
+          command: |
+              git rev-parse --abbrev-ref HEAD
+              if [[ "$CIRCLE_BRANCH" = "circle-tests" ]]; then
+                exit 1
+              fi
