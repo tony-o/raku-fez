@@ -16,10 +16,12 @@ jobs:
           name: test 
           command: |
               zef test .
-      - run:
-          name: publish
-          when:
-            and:
-              - equal: [ 'circle-tests', '<< pipeline.git.branch >>' ]
-          command: |
-              git rev-parse --abbrev-ref HEAD
+      -  when:
+          condition:
+            equal: [ 'circle-tests', '<< pipeline.git.branch >>' ]
+          run:
+            steps:
+              - run:
+                name: publish
+                command: |
+                    git rev-parse --abbrev-ref HEAD
