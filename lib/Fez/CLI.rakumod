@@ -130,7 +130,9 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
 
   my $errors;
   my @files    = $file ?? ::('Fez::Util::Tar').ls($file) !! do {
-    my @xs = |['lib'.IO, 'resources'.IO];
+    my @xs;
+    @xs.push('lib'.IO) if 'lib'.IO.d;
+    @xs.push('resources'.IO) if 'resources'.IO.d;
     my @l;
     while @xs {
       for @xs.pop.dir -> $f {

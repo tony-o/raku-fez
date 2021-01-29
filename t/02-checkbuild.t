@@ -1,7 +1,7 @@
 #!/usr/bin/env raku
 
 use Test;
+use Fez::CLI;
 plan 1;
 
-require ::('Fez::CLI');
-ok so ::('Fez::CLI')::<&MAIN>('checkbuild'), 'fez passes its own checkbuild';
+ok Fez::CLI::<&MAIN>('checkbuild'), 'fez passes its own checkbuild';
