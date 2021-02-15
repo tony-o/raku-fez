@@ -302,6 +302,51 @@ multi MAIN('upload', Str :$file = '') is export {
   say '>>= Hey! You did it! Your dist will be indexed shortly.';
 }
 
+multi MAIN('plugin', Bool :a($all) = False) is export {
+  my @base = qw<bundlers requestors>;
+  my $user-config = user-config;
+  my @keys = $all ?? $user-config.keys.sort !! @base.grep({ $user-config{$_}.defined && +($user-config{$_}) });
+  say ">>= user config: {user-config-path}" if +@keys;
+  for @keys -> $k {
+    say ">>=   $k: ";
+    say ">>=     {$user-config{$k}.join("\n>>=     ")}";
+  }
+  my $env-config = env-config;
+  @keys = $all ?? $env-config.keys.sort !! @base.grep({ $env-config{$_}.defined && +($env-config{$_}) });
+  say ">>= environment config: {env-config-path}" if +@keys;
+  for @keys -> $k {
+    say ">>=   $k: ";
+    say ">>=     {$env-config{$k}.join("\n>>=     ")}";
+  }
+}
+
+multi MAIN('plugin', Str $key where * !~~ 'key'|'un', Str $action where * ~~ 'remove'|'append'|'prepend', Str $value) is export {
+  if $action ~~ 'append'|'prepend' {
+    my $cfg = user-config{$key}//[];
+    write-to-user-config($key => $cfg.^can($action).first.($cfg, $value));
+    say ">>= added {$key}.'$value'";
+  } else {
+    my $cfg = user-config{$key}//[];
+    $cfg = $cfg.grep(* ne $value).unique;
+    write-to-user-config($key => $cfg);
+    say ">>= removed {$key}.'$value'";
+  }
+}
+
+multi MAIN('plugin', Bool :h(:$help)?) is export {
+  note qq:to/END/
+    Fez - Raku / Perl6 package utility
+
+    USAGE
+
+      fez plugin
+        - lists current plugins and config locations
+      fez plugin <key> 'remove|append|prepend' <value>
+        - removes/appends/prepends <value> from <key>
+
+  END
+}
+
 multi MAIN(Bool :h(:$help)?) {
   note qq:to/END/
     Fez - Raku / Perl6 package utility
@@ -331,3 +376,24 @@ multi MAIN(Bool :h(:$help)?) {
 
   END
 }
+
+#multi MAIN(*@p, *%n) {
+#  ## load extensions
+#  my @l = |(user-config<extensions>//[]), |(env-config<extensions>//[]);
+#  my %*USAGE;
+#  for @l -> $ext {
+#    CATCH {
+#      default {
+#        say "=<< error loading requested extension: $ext";
+#      }
+#    }
+#    require ::("$ext") <&MAIN>;
+#    try {
+#      %*USAGE = %*USAGE, | ( try { ::("{$ext}::EXPORT::DEFAULT::%usage"); } // {});
+#      ::("{$ext}::EXPORT::DEFAULT::&MAIN").(|@p, |%n);
+#      exit 0;
+#    };
+#  }
+#  MAIN(:h);
+#  exit 1;
+#}

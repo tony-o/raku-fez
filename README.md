@@ -11,12 +11,10 @@ fez is the command line tool used to manage your ecosystem user/pass.
 * upload
 * reset-password
 * meta
-
-### todo:
-
 * plugin management
 * command extensions via plugins
 
+if you have features or edge cases that would make your migration to fez easier, please open a bug here in github or message me in #raku on freenode (tonyo).
 
 ### register
 
@@ -110,6 +108,16 @@ $ fez checkbuild
 ```
 
 If you're rolling your own tarballs then you can specify the file to checkout with `--file=`, please keep in mind that checkbuild requires access to a tar that can work with compression for _some_ of these checks.
+
+### plugin
+
+`fez plugin` lists the current plugins in your config file(s).
+
+`fez plugin <key> 'remove'|'append'|'prepend' <value>` does the requested action to <key> in your user config.
+
+#### extensions
+
+fez can now load extensions to `MAIN`.  this happens as a catchall at the bottom of fez and uses the first available extensions that it can and exits afterwards. eg if two extensions provide a command `fez test` then the first one that successfully completes (doesn't die or exit) will be run and then fez will exit.
 
 ## license
 

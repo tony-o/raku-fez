@@ -1,3 +1,4 @@
 #!/usr/bin/env raku
 
+my %*SUB-MAIN-OPTS = :named-anywhere, :bundling;
 use Fez::CLI;

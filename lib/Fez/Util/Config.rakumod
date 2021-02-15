@@ -20,6 +20,10 @@ sub user-config is export {
   %USER-CONFIG;
 }
 
+sub env-config is export {
+  %ENV-CONFIG;
+}
+
 sub config-value($name) is export {
     %USER-CONFIG{$name} //
     %ENV-CONFIG{$name};
@@ -31,3 +35,4 @@ sub write-to-user-config(%values) is export {
 }
 
 sub user-config-path is export { $USER-CONFIG-PATH; }
+sub env-config-path is export { $ENV-CONFIG-PATH; }
