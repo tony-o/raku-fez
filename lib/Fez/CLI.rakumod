@@ -272,14 +272,14 @@ multi MAIN('upload', Str :$file = '') is export {
     say '=<< You must login to upload';
     exit 255;
   }
-  my $fn = $file;
-  if '' ne $file && ! $file.IO.f {
-    say "=<< Cannot find $file";
-    exit 255;
-  }
+  my $fn;
   try {
     CATCH { default { printf "=<< ERROR: %s\n", .message; exit 255; } }
-    $fn = bundle('.'.IO.absolute);
+    $fn = $file || bundle('.'.IO.absolute);
+    if '' ne $file && ! $file.IO.f {
+      say "=<< Cannot find $file";
+      exit 255;
+    }
   };
   if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
     my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ') !~~ any('y'|'yes'|'n'|'no'|'');
