@@ -119,6 +119,14 @@ If you're rolling your own tarballs then you can specify the file to checkout wi
 
 fez can now load extensions to `MAIN`.  this happens as a catchall at the bottom of fez and uses the first available extensions that it can and exits afterwards. eg if two extensions provide a command `fez test` then the first one that successfully completes (doesn't die or exit) will be run and then fez will exit.
 
+## articles about fez
+
+if you'd like to see your article featured here, please send a pr.
+
+* [faq: zef ecosystem](https://deathbyperl6.com/faq-zef-ecosystem/)
+* [fez|zef - a raku ecosystem and auth](https://deathbyperl6.com/fez-zef-a-raku-ecosystem-and-auth/)
+
+
 ## license
 
 [![License: Artistic-2.0](https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg)](https://opensource.org/licenses/Artistic-2.0)
