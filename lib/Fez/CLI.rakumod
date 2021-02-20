@@ -294,6 +294,12 @@ multi MAIN('upload', Str :$file = '') is export {
     headers => {'Authorization' => "Zef {config-value('key')}"},
   );
 
+  unless $response<success> {
+    my $error = $response<message> // 'no reason';
+    say "=<< Something went wrong while authenticating: $error. Do you need to run 'fez login' again?";
+    exit 255;
+  }
+
   my $upload = post(
      $response<key>,
      :method<PUT>,
