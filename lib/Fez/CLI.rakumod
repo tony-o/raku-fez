@@ -254,12 +254,22 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
     say '>>= Nothing to update';
     exit 0;
   }
-  my $response = try post(
-    '/update-meta',
-    headers => {'Authorization' => "Zef {config-value('key')}"},
-    :%data,
-  );
-  if ! ($response<success>//False).so {
+  my $response;
+  while ! ($response<success>//False) {
+    $response = try post(
+      '/update-meta',
+      headers => {'Authorization' => "Zef {config-value('key')}"},
+      :%data,
+    );
+
+    last if $response<success>;
+    if ($response<message>//'') eq 'expired' {
+      say '=<< Key is expired, please login:';
+      MAIN('login');
+      reload-config;
+      next;
+    }
+    my $error = $response<message> // 'no reason';
     say '=<< There was an error, please try again in a few minutes';
     exit 255;
   }
@@ -289,12 +299,21 @@ multi MAIN('upload', Str :$file = '') is export {
     }
   }
 
-  my $response = get(
-    '/upload',
-    headers => {'Authorization' => "Zef {config-value('key')}"},
-  );
 
-  unless $response<success> {
+  my $response;
+  while ! ($response<success>//False) {
+    $response = get(
+      '/upload',
+      headers => {'Authorization' => "Zef {config-value('key')}"},
+    );
+
+    last if $response<success>;
+    if ($response<message>//'') eq 'expired' {
+      say '=<< Key is expired, please login:';
+      MAIN('login');
+      reload-config;
+      next;
+    }
     my $error = $response<message> // 'no reason';
     say "=<< Something went wrong while authenticating: $error. Do you need to run 'fez login' again?";
     exit 255;
