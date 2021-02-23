@@ -120,6 +120,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
       exit 255;
     }
   }
+  $error('production in META is set to false') unless ($meta<production>//True).so;
 
   my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
   $error('name should be a value') unless $meta<name>;
