@@ -22,6 +22,10 @@ state $handler = do {
   $handler;
 };
 
+multi head($endpoint, :%headers = { }) is export {
+  $handler.head("{$endpoint.substr(0,4) eq 'http'??''!!$uri}$endpoint", :%headers);
+}
+
 multi get($endpoint, :%headers = { }) is export {
   my $out = $handler.get("{$endpoint.substr(0,4) eq 'http'??''!!$uri}$endpoint", :%headers);
   try {
