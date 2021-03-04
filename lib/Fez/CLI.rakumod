@@ -137,7 +137,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
     my @l;
     while @xs {
       for @xs.pop.dir -> $f {
-        @l.push: $f;
+        @l.push($f) unless $f.d;
         @xs.push($f) if $f.d;
       }
     }
