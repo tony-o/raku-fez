@@ -147,7 +147,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
     $error('Unable to list tar files', :!exit);
   } else {
     my @provides = |$meta<provides>.values;
-    my @resources = |$meta<resources>;
+    my @resources = |($meta<resources>//[]);
     my %check;
     for @files.grep({$_ ~~ m/^'/'**0..1'lib'/ && $_ ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
       %check{$f}++;
