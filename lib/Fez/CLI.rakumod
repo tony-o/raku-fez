@@ -3,6 +3,7 @@ unit package Fez::CLI;
 use Fez::Util::Pass;
 use Fez::Util::Json;
 use Fez::Util::Config;
+use Fez::Util::Date;
 use Fez::Web;
 use Fez::Bundle;
 
@@ -328,6 +329,47 @@ multi MAIN('upload', Str :$file = '') is export {
   say '>>= Hey! You did it! Your dist will be indexed shortly.';
 }
 
+multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
+  my @dists = (get($url)||[]).grep({$_<auth> eq "zef:{config-value('un')}"})
+                             .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
+                             .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
+                                      ?? Version.new($^a<ver>//$^a<vers>//$^a<version>) cmp 
+                                         Version.new($^b<ver>//$^b<vers>//$^b<version>)
+                                      !! $^a<name>.lc cmp $^b<name>.lc})
+                             .map({$_<dist>});
+  say ">>= {+@dists ?? @dists.join("\n>>= ") !! 'No results'}";
+}
+
+multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
+  my $d = (get($url)||[]).grep({$_<auth> eq "zef:{config-value('un')}"})
+                            .grep({$dist eq $_<dist>})
+                            .first;
+  if !$d || !$d<path> {
+    say "=<< Couldn't find $dist";
+    exit -1;
+  }
+  try {
+    CATCH { default { } }
+    my $date = try_dateparse(head( (S/'index.json'?$/$d<path>/ with $url) )<Last-Modified>);
+    my $diff = DateTime.now - $date;
+    if $diff > 86400 {
+      say "=<< It's past the 24 hour window for removing modules";
+      exit 255;
+    }
+  };
+  my $response = try post(
+    '/remove',
+    headers => {'Authorization' => "Zef {config-value('key')}"},
+    :data(dist => $d<dist>),
+  );
+  if $response<success> {
+    say '>>= Request received';
+    exit 0;
+  }
+  say '=<< Error processing request';
+  exit -1;
+}
+
 multi MAIN('plugin', Bool :a($all) = False) is export {
   my @base = qw<bundlers requestors>;
   my $user-config = user-config;
@@ -373,6 +415,7 @@ multi MAIN('plugin', Bool :h(:$help)?) is export {
   END
 }
 
+multi MAIN('help') { MAIN(:h); }
 multi MAIN(Bool :h(:$help)?) {
   note qq:to/END/
     Fez - Raku / Perl6 package utility
@@ -389,7 +432,9 @@ multi MAIN(Bool :h(:$help)?) {
       meta                  update your public meta info (website, email, name)
       reset-password        initiates a password reset using the email
                             that you registered with
-      monkey-zef            modifies your zef configuration for fez repos
+      list                  lists the dists for the currently logged in user
+      remove                removes a dist from the ecosystem (requires fully
+                            qualified dist name, copy from `list` if in doubt)
 
     ENV OPTIONS
 

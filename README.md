@@ -109,6 +109,38 @@ $ fez checkbuild
 
 If you're rolling your own tarballs then you can specify the file to checkout with `--file=`, please keep in mind that checkbuild requires access to a tar that can work with compression for _some_ of these checks.
 
+## module management
+
+### listing your modules
+
+`fez list <filter?>`
+
+```
+$ fez list csv
+>>= CSV::Parser:ver<0.1.2>:auth<zef:tony-o>
+>>= Text::CSV::LibCSV:ver<0.0.1>:auth<zef:tony-o>
+```
+
+```
+$ fez list
+>>= Bench:ver<0.2.0>:auth<zef:tony-o>
+>>= Bench:ver<0.2.1>:auth<zef:tony-o>
+>>= CSV::Parser:ver<0.1.2>:auth<zef:tony-o>
+>>= Data::Dump:ver<0.0.12>:auth<zef:tony-o>
+...etc
+```
+
+### removing a module
+
+This is highly unrecommended but a feature nonetheless.  This requires you use the full dist name as shown in `list` and is only available within 24 hours of upload. If an error occurs while removing the dist, you'll receive an email.
+
+```
+$ fez remove 'Data::Dump:ver<0.0.12>:auth<zef:tony-o>'
+>>= Request received
+```
+
+## plugins
+
 ### plugin
 
 `fez plugin` lists the current plugins in your config file(s).
