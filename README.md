@@ -175,7 +175,7 @@ zef will prioritize whichever gives the highest version and then the rest depend
 
 ### what's this sdist directory?
 
-when fez bundles your source it outputs to `sdist/<name>.tar.gz` and then uploads that package to the ecosystem.  there are two ways that fez might try to bundle your package.
+when fez bundles your source it outputs to `sdist/<name>.tar.gz` and then uploads that package to the ecosystem.  there are two ways that fez might try to bundle your package. as of `fez:ver<26+>` fez will attempt to remove the sdist/ directory _if no `--file` is manually specified_
 
 #### using git archive
 
