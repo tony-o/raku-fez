@@ -151,6 +151,32 @@ $ fez remove 'Data::Dump:ver<0.0.12>:auth<zef:tony-o>'
 
 fez can now load extensions to `MAIN`.  this happens as a catchall at the bottom of fez and uses the first available extensions that it can and exits afterwards. eg if two extensions provide a command `fez test` then the first one that successfully completes (doesn't die or exit) will be run and then fez will exit.
 
+## faq
+
+- [do I need to remove modules from cpan](#do-i-need-to-remove-modules-from-cpan)
+- [which version will zef choose if my module is also on cpan](#which-version-will-zef-choose-if-my-module-is-also-on-cpan)
+- [what's this sdist directory](#whats-this-sdist-directory)
+
+### do i need to remove modules from cpan?
+
+No.  If you want your fez modules to be prioritized then simply bump the version.  Note that you can upload older versions of your modules using a tar.gz and specifing `fez upload --file <path to tar.gz>`.
+
+### which version will zef choose if my module is also on cpan?
+
+zef will prioritize whichever gives the highest version and then the rest depends on which ecosystem is checked first which can vary system to system.
+
+### what's this sdist directory?
+
+when fez bundles your source it outputs to `sdist/<name>.tar.gz` and then uploads that package to the ecosystem.  there are two ways that fez might try to bundle your package.
+
+#### using git archive
+
+fez will attempt to run `git archive` which will obey your `.gitignore` files. it is a good idea to put sdist/ in your root gitignore to prevent previously uploaded modules.
+
+#### using tar
+
+if there is a `tar` in path then fez will try to bundle everything not in hidden directories/files (anything starting with a `.`) and ignore the `sdist/` directory.
+
 ## articles about fez
 
 if you'd like to see your article featured here, please send a pr.
