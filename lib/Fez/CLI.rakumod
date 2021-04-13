@@ -19,7 +19,7 @@ multi MAIN('reset-password') is export {
     }).join,
   );
   if ! $response<success>.so {
-    say '=<< There was an error communicating with the service, please';
+    $*ERR.say: '=<< There was an error communicating with the service, please';
     say '    try again in a few minutes.';
     exit 255;
   }
@@ -32,7 +32,7 @@ multi MAIN('reset-password') is export {
     password => $pass,
   });
   if ! $response<success>.so {
-    say "=<< Password reset failed: {$response<message>}";
+    $*ERR.say: "=<< Password reset failed: {$response<message>}";
     exit 255;
   }
   write-to-user-config({
@@ -44,9 +44,15 @@ multi MAIN('reset-password') is export {
 
 multi MAIN('register') is export {
   my ($em, $un, $pw);
-  $em = prompt('>>= Email: ') while ($em//'').chars < 6;
-  $un = prompt('>>= Username: ') while ($un//'').chars < 3;
-  $pw = getpass('>>= Password: ') while ($pw//'').chars < 8;
+  $em = prompt('>>= Email: ');
+  $em = prompt('>>= Email: ') while ($em//'').chars < 6
+                                 && 1 == $*ERR.say('=<< Please enter a valid email');
+  $un = prompt('>>= Username: ');
+  $un = prompt('>>= Username: ') while ($un//'').chars < 3
+                                    && 1 == $*ERR.say('=<< Username must be longer than 3 chars');
+  $pw = getpass('>>= Password: ');
+  $pw = getpass('>>= Password: ')  while ($pw//'').chars < 8
+                                      && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
 
   my $response = post(
     '/register',
@@ -54,7 +60,7 @@ multi MAIN('register') is export {
   );
 
   if ! $response<success>.so {
-    say "=<< Registration failed: {$response<message>}";
+    $*ERR.say: "=<< Registration failed: {$response<message>}";
     exit 255;
   }
   say ">>= Registration successful, requesting auth key";
@@ -67,15 +73,19 @@ multi MAIN('register') is export {
 multi MAIN('login') is export {
   my $un = $*USERNAME // '';
   my $pw = $*PASSWORD // '';
-  $un = prompt('>>= Username: ') while ($un//'').chars < 3;
-  $pw = getpass('>>= Password: ') while ($pw//'').chars < 8;
+  $un = prompt('>>= Username: ');
+  $un = prompt('>>= Username: ') while ($un//'').chars < 3
+                                    && 1 == $*ERR.say('=<< Username must be longer than 3 chars');
+  $pw = getpass('>>= Password: ');
+  $pw = getpass('>>= Password: ')  while ($pw//'').chars < 8
+                                      && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
 
   my $response = post(
     '/login',
     data => { username => $un, password => $pw, }
   );
   if ! $response<success>.so {
-    say "=<< failed to login: {$response<message>}";
+    $*ERR.say: "=<< Failed to login: {$response<message>}";
     exit 255;
   }
 
@@ -106,17 +116,17 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
     }
   } or do {
     if $skip-meta {
-      say '=<< Unable to verify meta, no tar found.';
+      $*ERR.say: '=<< Unable to verify meta, no tar found.';
     } else {
-      say '=<< Unable to find META6.json';
+      $*ERR.say: '=<< Unable to find META6.json';
       exit 255;
     }
   };
   return if $skip-meta;
   my $error = sub ($e, Bool :$exit = True) {
-    say "=<< $e";
+    $*ERR.say: "=<< $e";
     if $exit {
-      say '=<< If you\'re using git, make sure to commit your changes.' if '.git'.IO ~~ :d;
+      $*ERR.say: '=<< If you\'re using git, make sure to commit your changes.' if '.git'.IO ~~ :d;
       printf "=<< To inspect the file, check: %s\n", $file.IO.resolve.relative if $file;
       exit 255;
     }
@@ -236,7 +246,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
 multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    say '=<< You must login to change your info';
+    $*ERR.say: '=<< You must login to change your info';
     exit 255;
   }
   my %data;
@@ -266,22 +276,22 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
 
     last if $response<success>;
     if ($response<message>//'') eq 'expired' {
-      say '=<< Key is expired, please login:';
+      $*ERR.say: '=<< Key is expired, please login:';
       MAIN('login');
       reload-config;
       next;
     }
     my $error = $response<message> // 'no reason';
-    say '=<< There was an error, please try again in a few minutes';
+    $*ERR.say: '=<< There was an error, please try again in a few minutes';
     exit 255;
   }
-  say '=<< Your meta info has been updated';
+  $*ERR.say: '=<< Your meta info has been updated';
 }
 
-multi MAIN('upload', Str :$file = '') is export {
+multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    say '=<< You must login to upload';
+    $*ERR.say: '=<< You must login to upload';
     exit 255;
   }
   my $fn;
@@ -289,14 +299,14 @@ multi MAIN('upload', Str :$file = '') is export {
     CATCH { default { printf "=<< ERROR: %s\n", .message; exit 255; } }
     $fn = $file || bundle('.'.IO.absolute);
     if '' ne $file && ! $file.IO.f {
-      say "=<< Cannot find $file";
+      $*ERR.say: "=<< Cannot find $file";
       exit 255;
     }
   };
   if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
     my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ') !~~ any('y'|'yes'|'n'|'no'|'');
     if $resp ~~ any('n'|'no'|'') {
-      say '=<< Ok, exiting';
+      $*ERR.say: '=<< Ok, exiting';
       exit 255;
     }
   }
@@ -311,13 +321,13 @@ multi MAIN('upload', Str :$file = '') is export {
 
     last if $response<success>;
     if ($response<message>//'') eq 'expired' {
-      say '=<< Key is expired, please login:';
+      $*ERR.say: '=<< Key is expired, please login:';
       MAIN('login');
       reload-config;
       next;
     }
     my $error = $response<message> // 'no reason';
-    say "=<< Something went wrong while authenticating: $error. Do you need to run 'fez login' again?";
+    $*ERR.say: "=<< Something went wrong while authenticating: $error. Do you need to run 'fez login' again?";
     exit 255;
   }
 
@@ -326,6 +336,22 @@ multi MAIN('upload', Str :$file = '') is export {
      :method<PUT>,
      :file($fn.IO.absolute),
   );
+  if '' eq $file && !$save-autobundle {
+    try {
+      CATCH { default {
+        $*ERR.say: "=<< Failed to remove temporary file {$fn.relative}: $_";
+      } }
+      $fn.unlink;
+    }
+    if $fn.parent.dir.elems == 0 {
+      try {
+        CATCH { default {
+          $*ERR.say: "=<< Failed to remove directory {$fn.parent.relative}: $_";
+        } }
+        $fn.parent.rmdir;
+      }
+    }
+  }
   say '>>= Hey! You did it! Your dist will be indexed shortly.';
 }
 
@@ -345,7 +371,7 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
                             .grep({$dist eq $_<dist>})
                             .first;
   if !$d || !$d<path> {
-    say "=<< Couldn't find $dist";
+    $*ERR.say: "=<< Couldn't find $dist";
     exit -1;
   }
   try {
@@ -353,7 +379,7 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
     my $date = try_dateparse(head( (S/'index.json'?$/$d<path>/ with $url) )<Last-Modified>);
     my $diff = DateTime.now - $date;
     if $diff > 86400 {
-      say "=<< It's past the 24 hour window for removing modules";
+      $*ERR.say: "=<< It's past the 24 hour window for removing modules";
       exit 255;
     }
   };
@@ -366,7 +392,7 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
     say '>>= Request received';
     exit 0;
   }
-  say '=<< Error processing request';
+  $*ERR.say: '=<< Error processing request';
   exit -1;
 }
 
@@ -374,14 +400,14 @@ multi MAIN('plugin', Bool :a($all) = False) is export {
   my @base = qw<bundlers requestors>;
   my $user-config = user-config;
   my @keys = $all ?? $user-config.keys.sort !! @base.grep({ $user-config{$_}.defined && +($user-config{$_}) });
-  say ">>= user config: {user-config-path}" if +@keys;
+  say ">>= User config: {user-config-path}" if +@keys;
   for @keys -> $k {
     say ">>=   $k: ";
     say ">>=     {$user-config{$k}.join("\n>>=     ")}";
   }
   my $env-config = env-config;
   @keys = $all ?? $env-config.keys.sort !! @base.grep({ $env-config{$_}.defined && +($env-config{$_}) });
-  say ">>= environment config: {env-config-path}" if +@keys;
+  say ">>= Environment config: {env-config-path}" if +@keys;
   for @keys -> $k {
     say ">>=   $k: ";
     say ">>=     {$env-config{$k}.join("\n>>=     ")}";
@@ -392,12 +418,12 @@ multi MAIN('plugin', Str $key where * !~~ 'key'|'un', Str $action where * ~~ 're
   if $action ~~ 'append'|'prepend' {
     my $cfg = user-config{$key}//[];
     write-to-user-config($key => $cfg.^can($action).first.($cfg, $value));
-    say ">>= added {$key}.'$value'";
+    say ">>= Added {$key}.'$value'";
   } else {
     my $cfg = user-config{$key}//[];
     $cfg = $cfg.grep(* ne $value).unique;
     write-to-user-config($key => $cfg);
-    say ">>= removed {$key}.'$value'";
+    say ">>= Removed {$key}.'$value'";
   }
 }
 
@@ -455,7 +481,7 @@ multi MAIN(Bool :h(:$help)?) {
 #  for @l -> $ext {
 #    CATCH {
 #      default {
-#        say "=<< error loading requested extension: $ext";
+#        $*ERR.say: "=<< error loading requested extension: $ext";
 #      }
 #    }
 #    require ::("$ext") <&MAIN>;
