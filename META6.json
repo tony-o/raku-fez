@@ -1,7 +1,7 @@
 {
   "name":          "fez",
   "auth":          "zef:tony-o",
-  "version":       "26",
+  "version":       "27",
   "api":           "0",
   "description":   "one way to upload your dists to the masses.",
   "perl":          "6.c",

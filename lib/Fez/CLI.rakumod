@@ -123,22 +123,22 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
     }
   };
   return if $skip-meta;
-  my $error = sub ($e, Bool :$exit = True) {
+  my $error = sub ($e, $ec?=255, Bool :$exit = True) {
     $*ERR.say: "=<< $e";
     if $exit {
       $*ERR.say: '=<< If you\'re using git, make sure to commit your changes.' if '.git'.IO ~~ :d;
       printf "=<< To inspect the file, check: %s\n", $file.IO.resolve.relative if $file;
-      exit 255;
+      exit $ec;
     }
   }
   $error('production in META is set to false') unless ($meta<production>//True).so;
 
   my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
-  $error('name should be a value') unless $meta<name>;
-  $error('ver should not be nil')  if     $ver eq '';
-  $error('auth should not be nil') unless $meta<auth>;
-  $error('auth should start with "zef:"') unless $meta<auth>.substr(0,4) eq 'zef:';
-  $error('ver cannot be "*"') if $ver.trim eq '*';
+  $error('name should be a value', 1) unless $meta<name>;
+  $error('ver should not be nil', 2)  if     $ver eq '';
+  $error('auth should not be nil', 3) unless $meta<auth>;
+  $error('auth should start with "zef:"', 4) unless $meta<auth>.substr(0,4) eq 'zef:';
+  $error('ver cannot be "*"', 5) if $ver.trim eq '*';
 
   my $errors;
   my @files    = $file ?? ::('Fez::Util::Tar').ls($file) !! do {

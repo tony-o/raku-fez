@@ -14,5 +14,6 @@ method bundle($location) {
 
 method able {
   my $p2 = run 'gzip', '--version', :out, :err;
-  '.git'.IO.d.so && $p2.exitcode == 0;
+  my $p1 = run 'git', '--version', :out, :err;
+  '.git'.IO.d.so && $p2.exitcode == 0 && $p1.exitcode == 0;
 }

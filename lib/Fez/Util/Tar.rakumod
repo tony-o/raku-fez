@@ -21,6 +21,8 @@ method ls($file) {
 }
 
 method able {
-  my $p = run 'tar', '--help', :out, :err;
+  my @cmd = 'tar', '--help';
+  @cmd = ('man', '-c', 'tar') if $*KERNEL.name ~~ m:i/bsd/;
+  my $p = run @cmd, :out, :err;
   $p.exitcode == 0 && $p.out.slurp.contains: '-z';
 }
