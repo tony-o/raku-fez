@@ -96,19 +96,16 @@ multi MAIN('login') is export {
   say ">>= Login successful, you can now upload dists";
 }
 
-multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is export {
+multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bool :$development = False) is export {
   my $skip-meta;
-  require ::('Fez::Util::Tar');
   my $meta = try {
     if $file eq '' {
       say '>>= Inspecting ./META6.json';
       from-j('./META6.json'.IO.slurp);
     } else {
       printf ">>= Looking in \"%s\" for META6.json\n", $file.IO.resolve.relative;
-      if ::('Fez::Util::Tar').able {
-        my $proc = run 'tar', 'xOf', $file, 'META6.json', :out, :err;
-        die if $proc.exitcode != 0;
-        from-j($proc.out.slurp);
+      if (my $data = cat($file, 'META6.json')) {
+        from-j($data);
       } else {
         $skip-meta = True;
         False;
@@ -131,7 +128,8 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
       exit $ec;
     }
   }
-  $error('production in META is set to false') unless ($meta<production>//True).so;
+  $error('production in META is set to false') if !($meta<production>//True).so
+                                               && !$development;
 
   my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
   $error('name should be a value', 1) unless $meta<name>;
@@ -141,7 +139,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False) is
   $error('ver cannot be "*"', 5) if $ver.trim eq '*';
 
   my $errors;
-  my @files    = $file ?? ::('Fez::Util::Tar').ls($file) !! do {
+  my @files = $file ?? ls($file) !! do {
     my @xs;
     @xs.push('lib'.IO) if 'lib'.IO.d;
     @xs.push('resources'.IO) if 'resources'.IO.d;

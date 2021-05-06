@@ -39,3 +39,13 @@ sub bundle($target) is export {
   }
   die 'All bundlers exhausted, unable to make .tar.gz';
 }
+
+sub cat($target, $file) is export {
+  return Failure unless $target.IO.f;
+  @handlers.map({ try $_.cat($target, $file) }).grep(*.defined).first;
+}
+
+sub ls($target) is export {
+  return Failure unless $target.IO.f;
+  @handlers.map({ try $_.ls($target) }).grep(*.defined).first;
+}

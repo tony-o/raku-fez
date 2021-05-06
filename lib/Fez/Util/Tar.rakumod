@@ -20,6 +20,12 @@ method ls($file) {
   return $p.out.slurp.lines;
 }
 
+method cat($dist, $file) {
+  my $proc = run 'tar', 'xzOf', $dist.IO.absolute, $file, :out, :err;
+  return Failure if $proc.exitcode != 0;
+  $proc.out.slurp;
+}
+
 method able {
   my @cmd = 'tar', '--help';
   @cmd = ('man', '-c', 'tar') if $*KERNEL.name ~~ m:i/bsd/;
