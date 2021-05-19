@@ -9,9 +9,8 @@ method cat($dist, $file) {
   my $p = run @cmd, '-c', '-d', $dist, :out, :err;
   return Failure if $p.exitcode != 0;
   my $t = Fez::Util::RTar::Tar.new(file-name => $*TMPDIR.add(time.Str ~ ".tar").absolute,
-                                   buffer    => parse-tar($p.out.slurp :bin),
+                                   buffer    => parse-tar($p.out.slurp(:bin)),
                                   );
-
   return Failure unless $t.ls.grep: * eq $file;
   $t.peek($file).value.decode;
 }
