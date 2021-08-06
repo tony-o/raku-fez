@@ -161,7 +161,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     for @files.grep({$_ ~~ m/^'/'**0..1'lib'/ && $_ ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
       %check{$f}++;
     }
-    for @provides -> $f {
+    for @provides.unique -> $f {
       %check{$f}--;
     }
     for %check.keys -> $f {
@@ -184,7 +184,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     for @files.grep({$_ ~~ m/^'/'**0..1'resources'/ && $_ !~~ m/'/'$/}) -> $f {
       %check{S/^'/'// with $f}++;
     }
-    for @resources -> $f {
+    for @resources.unique -> $f {
       %check{"resources/{$f}"}--;
     }
     for %check.keys -> $f {
