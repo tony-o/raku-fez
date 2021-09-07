@@ -104,7 +104,12 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
       from-j('./META6.json'.IO.slurp);
     } else {
       printf ">>= Looking in \"%s\" for META6.json\n", $file.IO.resolve.relative;
-      if (my $data = cat($file, 'META6.json')) {
+      my @files = ls($file);
+      my $fn = '';
+      for @files -> $f {
+        $fn = $f if ($f.chars < $fn.chars || $fn.chars == 0) && $f ~~ /'META6.json'$/;
+      }
+      if (my $data = cat($file, $fn)) {
         from-j($data);
       } else {
         $skip-meta = True;
