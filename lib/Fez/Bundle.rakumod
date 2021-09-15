@@ -31,7 +31,7 @@ sub bundle($target) is export {
   
   my ($out, $caught);
   for @handlers -> $handler {
-    CATCH { default { $*IN.print('=<< ' ~ .message); $caught = True; .resume; } }
+    CATCH { default { $*IN.print('=<< ' ~ .message ~ "\n"); $caught = True; .resume; } }
     $caught = False;
     $out = $handler.bundle($location.absolute);
     next if $caught;

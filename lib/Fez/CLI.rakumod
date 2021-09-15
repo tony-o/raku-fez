@@ -98,6 +98,8 @@ multi MAIN('login') is export {
 
 multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bool :$development = False) is export {
   my $skip-meta;
+  my $root = '.';
+  my $sep = '.'.IO.SPEC.dir-sep;
   my $meta = try {
     if $file eq '' {
       say '>>= Inspecting ./META6.json';
@@ -105,9 +107,15 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     } else {
       printf ">>= Looking in \"%s\" for META6.json\n", $file.IO.resolve.relative;
       my @files = ls($file);
+      my @dirs = @files.map({$_.IO.relative.split($sep).first}).unique;
+      if @dirs.elems != 1 {
+        $*ERR.say: '=<< No single root directory found, all dists must extract to a single directory';
+        exit 255;
+      }
+      $root = @dirs[0];
       my $fn = '';
       for @files -> $f {
-        $fn = $f if ($f.chars < $fn.chars || $fn.chars == 0) && $f ~~ /'META6.json'$/;
+        $fn = $f if $f ~~ /^ ('.'|'..')? $sep? $root $sep 'META6.json'$/;
       }
       if (my $data = cat($file, $fn)) {
         from-j($data);
@@ -151,7 +159,8 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     my @l;
     while @xs {
       for @xs.pop.dir -> $f {
-        @l.push($f) unless $f.d;
+        @l.push($f) if ($f.f && $f.basename ~~ /'.'('rakumod'|'pm6')$/)
+                    || ($f.relative ~~ /^ 'resources' $sep / && $f.f);
         @xs.push($f) if $f.d;
       }
     }
@@ -163,13 +172,16 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     my @provides = |$meta<provides>.values;
     my @resources = |($meta<resources>//[]);
     my %check;
-    for @files.grep({$_ ~~ m/^'/'**0..1'lib'/ && $_ ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
+    for @files.grep({(
+        ( $file && $_ ~~ m/^('.'|'..')? $sep? $root $sep 'lib'/) 
+      ||(!$file && $_ ~~ m/$sep? 'lib'/)
+    ) && $_ ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
       %check{$f}++;
     }
     for @provides.unique -> $f {
-      %check{$f}--;
+      %check{$root.IO.add($f).relative}--;
     }
-    for %check.keys -> $f {
+    for %check.keys.sort -> $f {
       %check{$f}:delete if %check{$f} == 0;
       next unless %check{$f};
       $error(
@@ -186,11 +198,14 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     $errors++ if %check.keys;
 
     %check = ();
-    for @files.grep({$_ ~~ m/^'/'**0..1'resources'/ && $_ !~~ m/'/'$/}) -> $f {
+    for @files.grep({(
+        ( $file && $_ ~~ m/^('.'|'..')? $sep? $root $sep 'resources'/)
+      ||(!$file && $_ ~~ m/$sep? 'resources'/)
+    ) && $_ !~~ m/'/'$/}) -> $f {
       %check{S/^'/'// with $f}++;
     }
     for @resources.unique -> $f {
-      %check{"resources/{$f}"}--;
+      %check{$root.IO.add("resources/{$f}").relative}--;
     }
     for %check.keys -> $f {
       %check{$f}:delete if %check{$f} == 0;
