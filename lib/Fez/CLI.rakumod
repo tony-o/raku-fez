@@ -4,6 +4,7 @@ use Fez::Util::Pass;
 use Fez::Util::Json;
 use Fez::Util::Config;
 use Fez::Util::Date;
+use Fez::Util::Uri;
 use Fez::Web;
 use Fez::Bundle;
 
@@ -11,13 +12,101 @@ multi MAIN(Bool :v(:$version) where .so) {
   say '>>= fez version: ' ~ $?DISTRIBUTION.meta<ver version>.first(*.so);
 }
 
+multi MAIN('org', 'create', Str $org-name, Str $org-email) {
+  my $response = get('/group?' ~ pct-encode({
+                        group => $org-name,
+                        email => $org-email,
+                      }),
+                      headers => {'Authorization' => "Zef {config-value('key')}"});
+  if $response<success> {
+    say ">>= You're the proud new admin of $org-name";
+    $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
+    if ! $response<success>.so {
+      $*ERR.say: "=<< Failed to retrieve user orgs";
+      exit 255;
+    }
+    if $response<success> {
+      write-to-user-config({ groups => $response<groups> });
+    } else {
+      $*ERR.say: "=<< Failed to update config";
+      exit 1;
+    }
+  } else {
+    $*ERR.say: "=<< $response<message>";
+    exit 255;
+  }
+}
+
+multi MAIN('org', 'leave', Str $org-name) {
+  my $response = post('/groups',
+                      data => {
+                        group => $org-name,
+                      },
+                      method => 'DELETE',
+                      headers => {'Authorization' => "Zef {config-value('key')}"});
+  if $response<success> {
+    say ">>= You're no longer in $org-name";
+    $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
+    if ! $response<success>.so {
+      $*ERR.say: "=<< Failed to retrieve user orgs";
+      exit 255;
+    }
+    if $response<success> {
+      write-to-user-config({ groups => $response<groups> });
+    } else {
+      $*ERR.say: "=<< Failed to update config";
+      exit 1;
+    }
+  } else {
+    $*ERR.say: "=<< $response<message>";
+    exit 255;
+  }
+}
+
+multi MAIN('org', 'pending') {
+  my $response = get('/groups/invites', headers => {'Authorization' => "Zef {config-value('key')}"});
+  if $response<success> {
+    say '>>= R Org' if +@($response<groups>);
+    for @($response<groups>).sort({ $^a<role> eq $^b<role> ?? $^a<group> cmp $^b<group> !! $^a<role> cmp $^b<role> }) -> %g {
+      say ">>= {%g<role>.substr(0,1)} {%g<group>}";
+    }
+  } else {
+    $*ERR.say: "=<< Failed. $response<message>";
+    exit 255;
+  }
+}
+
+multi MAIN('org', 'members', Str $org-name) {
+  my $response = post('/groups/members',
+                      data => {
+                        group => $org-name,
+                      },
+                      headers => {'Authorization' => "Zef {config-value('key')}"});
+  if $response<success> {
+    say '>>= R Org Name' if +@($response<members>);
+    for @($response<members>).sort({ $^a<role> eq $^b<role> ?? $^a<username> cmp $^b<username> !! $^a<role> cmp $^b<role> }) -> %m {
+      say ">>= {%m<role>.substr(0,1)} {%m<username>}"
+    }
+  } else {
+    $*ERR.say: "=<< Failed. $response<message>";
+    exit 255;
+  }
+}
+
+multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) {
+  my $response = post('/groups?' ~ pct-encode({ :$role, group => $org-name, :$user }),
+                     headers => {Authorization => "Zef {config-value('key')}"});
+  if $response<success> {
+    say '>>= Invitation sent';
+  } else {
+    $*ERR.say: '=<< Failed';
+    exit 255;
+  }
+}
+
 multi MAIN('reset-password') is export {
   my $un = prompt('>>= Username: ') while ($un//'').chars < 3;
-  my $response = get(
-    '/init-password-reset?auth=' ~ $un.encode.decode("utf8").comb.map({
-      $_ ~~ m/^<[a..zA..Z0..9\-_.~]>$/ ?? $_ !! sprintf('%%%X', .ord)
-    }).join,
-  );
+  my $response = get('/init-password-reset?auth=' ~ pct-encode($un));
   if ! $response<success>.so {
     $*ERR.say: '=<< There was an error communicating with the service, please';
     say '    try again in a few minutes.';
@@ -89,9 +178,17 @@ multi MAIN('login') is export {
     exit 255;
   }
 
+  my $ukey = $response<key>;
+  $response = get('/groups', headers => {'Authorization' => "Zef $ukey"});
+  if ! $response<success>.so {
+    $*ERR.say: "=<< Failed to retrieve user groups";
+    exit 255;
+  }
+
   write-to-user-config({
-    key => $response<key>,
-    un  => $un,
+    key    => $ukey,
+    un     => $un,
+    groups => $response<groups>,
   });
   say ">>= Login successful, you can now upload dists";
 }
@@ -224,8 +321,8 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     $errors++ if %check.keys;
   }
 
-  if $meta<auth>.substr(4) ne (config-value('un')//'<unset>') {
-    printf "=<< \"%s\" does not match the username you last logged in with (%s),\n=<< you will need to login before uploading your dist\n\n",
+  if !($meta<auth>.substr(4) (elem) [(config-value('un')//'<unset>'), |(config-value('groups')//[])]) {
+    printf "=<< \"%s\" does not match the username you last logged in with (%s) or a group you belong to,\n=<< you will need to login before uploading your dist\n\n",
            $meta<auth>.substr(4),
            (config-value('un')//'unset');
     exit 255 if $auth-mismatch-error;
@@ -306,6 +403,25 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
   $*ERR.say: '=<< Your meta info has been updated';
 }
 
+multi MAIN('org', 'list') is export {
+  MAIN('login') unless config-value('key');
+  if ! (config-value('key')//0) {
+    $*ERR.say: '=<< You must login to upload';
+    exit 255;
+  }
+
+  my $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
+  if $response<success>//False {
+    say '>>= R Org Name' if +@($response<groups>);
+    for @($response<groups>) -> $g {
+      say ">>= {$g<role>.substr(0,1)} {$g<group>}";
+    }
+  } else {
+    $*ERR.say: '=<< Something went wrong';
+    exit 254;
+  }
+}
+
 multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
@@ -321,7 +437,7 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export 
       exit 255;
     }
   };
-  if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
+  if False && !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
     my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ') !~~ any('y'|'yes'|'n'|'no'|'');
     if $resp ~~ any('n'|'no'|'') {
       $*ERR.say: '=<< Ok, exiting';
@@ -459,6 +575,31 @@ multi MAIN('plugin', Bool :h(:$help)?) is export {
   END
 }
 
+multi MAIN('org', 'help') { MAIN('org', :h); }
+multi MAIN('org', Bool :h(:$help)?) {
+  note qq:to/END/
+    Fez - Raku / Perl6 package utility
+
+    USAGE
+
+      fez org command [args]
+
+    COMMANDS
+
+      create                creates an org in your honor
+      list                  lists your current org membership
+      members               lists members of \<org-name\>
+      pending               shows your current org invites
+      leave                 drops your membership with \<org-name\>
+                            note: if you're the last admin of the group this
+                                  operation will fail
+      invite                invites \<user\> to be a \<role\> user of \<org-name\>
+                            note: you must be an admin of the \<org-name\>
+                                  to invite other members
+
+  END
+}
+
 multi MAIN('help') { MAIN(:h); }
 multi MAIN(Bool :h(:$help)?) {
   note qq:to/END/
@@ -479,6 +620,7 @@ multi MAIN(Bool :h(:$help)?) {
       list                  lists the dists for the currently logged in user
       remove                removes a dist from the ecosystem (requires fully
                             qualified dist name, copy from `list` if in doubt)
+      org                   org actions, use `fez org help` for more info
 
     ENV OPTIONS
 
