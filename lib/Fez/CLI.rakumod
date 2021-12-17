@@ -531,7 +531,17 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
 }
 
 multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
-  my $d = (get($url)||[]).grep({$_<auth> eq "zef:{config-value('un')}"})
+  my $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
+  if ! $response<success>.so {
+    $*ERR.say: "=<< Failed to retrieve user orgs, the following list may be incomplete";
+  }
+  if $response<success> {
+    write-to-user-config({ groups => $response<groups> });
+  } else {
+    $*ERR.say: "=<< Failed to update config";
+  }
+  my @auths = ["zef:{config-value('un')}", |@($response<groups>).map({"zef:{$_<group>}"})];
+  my $d = (get($url)||[]).grep({$_<auth> (elem) @auths})
                             .grep({$dist eq $_<dist>})
                             .first;
   if !$d || !$d<path> {
@@ -547,7 +557,7 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
       exit 255;
     }
   };
-  my $response = try post(
+  $response = try post(
     '/remove',
     headers => {'Authorization' => "Zef {config-value('key')}"},
     :data(dist => $d<dist>),
