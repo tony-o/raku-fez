@@ -63,6 +63,29 @@ multi MAIN('org', 'leave', Str $org-name) {
   }
 }
 
+multi MAIN('org', 'accept', Str $org-name) {
+  my $response = post('/groups?' ~ pct-encode({ group => $org-name }),
+                      method => 'PUT',
+                      headers => {'Authorization' => "Zef {config-value('key')}"});
+  if $response<success> {
+    say ">>= You're now a very nice member of $org-name";
+    $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
+    if ! $response<success>.so {
+      $*ERR.say: "=<< Failed to retrieve user orgs";
+      exit 255;
+    }
+    if $response<success> {
+      write-to-user-config({ groups => $response<groups> });
+    } else {
+      $*ERR.say: "=<< Failed to update config";
+      exit 1;
+    }
+  } else {
+    $*ERR.say: "=<< $response<message>";
+    exit 255;
+  }
+}
+
 multi MAIN('org', 'pending') {
   my $response = get('/groups/invites', headers => {'Authorization' => "Zef {config-value('key')}"});
   if $response<success> {
@@ -590,6 +613,7 @@ multi MAIN('org', Bool :h(:$help)?) {
       list                  lists your current org membership
       members               lists members of \<org-name\>
       pending               shows your current org invites
+      accept                accepts an invite listed in pending
       leave                 drops your membership with \<org-name\>
                             note: if you're the last admin of the group this
                                   operation will fail
