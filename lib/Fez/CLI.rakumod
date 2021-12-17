@@ -124,6 +124,18 @@ multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) {
   }
 }
 
+multi MAIN('org', 'mod', Str $org-name, Str $role, Str $user) {
+  my $response = post('/group?' ~ pct-encode({ :$role, group => $org-name, :$user }),
+                      headers => {Authorization => "Zef {config-value('key')}"},
+                      method  => 'PATCH');
+  if $response<success> {
+    say '>>= User\'s role was modified';
+  } else {
+    $*ERR.say: '=<< Failed: ' ~ $response<message>;
+    exit 255;
+  }
+}
+
 multi MAIN('reset-password') is export {
   my $un = prompt('>>= Username: ') while ($un//'').chars < 3;
   my $response = get('/init-password-reset?auth=' ~ pct-encode($un));
