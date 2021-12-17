@@ -38,10 +38,7 @@ multi MAIN('org', 'create', Str $org-name, Str $org-email) {
 }
 
 multi MAIN('org', 'leave', Str $org-name) {
-  my $response = post('/groups',
-                      data => {
-                        group => $org-name,
-                      },
+  my $response = post('/groups?' ~ pct-encode({ group => $org-name }),
                       method => 'DELETE',
                       headers => {'Authorization' => "Zef {config-value('key')}"});
   if $response<success> {
