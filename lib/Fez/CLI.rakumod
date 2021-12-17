@@ -122,7 +122,7 @@ multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) {
   if $response<success> {
     say '>>= Invitation sent';
   } else {
-    $*ERR.say: '=<< Failed';
+    $*ERR.say: '=<< Failed: ' ~ $response<message>;
     exit 255;
   }
 }
