@@ -510,7 +510,17 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export 
 }
 
 multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
-  my @dists = (get($url)||[]).grep({$_<auth> eq "zef:{config-value('un')}"})
+  my $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
+  if ! $response<success>.so {
+    $*ERR.say: "=<< Failed to retrieve user orgs, the following list may be incomplete";
+  }
+  if $response<success> {
+    write-to-user-config({ groups => $response<groups> });
+  } else {
+    $*ERR.say: "=<< Failed to update config";
+  }
+  my @auths = ["zef:{config-value('un')}", |@($response<groups>).map({"zef:{$_<group>}"})];
+  my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
                              .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
                              .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
                                       ?? Version.new($^a<ver>//$^a<vers>//$^a<version>) cmp 
