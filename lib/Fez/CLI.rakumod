@@ -643,12 +643,16 @@ multi MAIN('org', Bool :h(:$help)?) {
       members               lists members of \<org-name\>
       pending               shows your current org invites
       accept                accepts an invite listed in pending
-      leave                 drops your membership with \<org-name\>
-                            note: if you're the last admin of the group this
-                                  operation will fail
-      invite                invites \<user\> to be a \<role\> user of \<org-name\>
-                            note: you must be an admin of the \<org-name\>
-                                  to invite other members
+      leave                 drops your membership with \<org-name\> *1
+      invite                invites a user to join your org, must be an admin
+      mod                   use this to modify a user's role, must be an admin
+
+      
+    NOTES\*
+
+      1. If you're the last admin of the group you must first modify your role to
+      member and then leave the group. The org is then considered abandoned,
+      there is no way to use fez to recover the org after this action.
 
   END
 }
