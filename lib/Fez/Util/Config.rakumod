@@ -12,6 +12,7 @@ state $USER-CONFIG-PATH = (
     %*ENV<HOME>.IO.add('.fez-config.json')
   }
 ).IO;
+$USER-CONFIG-PATH.parent.mkdir unless $USER-CONFIG-PATH.parent.d;
 $USER-CONFIG-PATH.spurt(to-j({})) unless $USER-CONFIG-PATH.e;
 state %USER-CONFIG;
 state %ENV-CONFIG;
