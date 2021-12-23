@@ -17,7 +17,7 @@ plan 1 +%fs.keys;
 
 my %meta = from-j('META6.json'.IO.slurp);
 for %meta<provides>.keys -> $dn {
-  %fs{%meta<provides>{$dn}}--;
+  %fs{%meta<provides>{$dn}.IO.relative}--;
   use-ok $dn;
 }
 
