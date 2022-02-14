@@ -470,6 +470,52 @@ multi MAIN('org', 'list') is export {
   }
 }
 
+multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+  MAIN('login') unless config-value('key');
+  if ! (config-value('key')//0) {
+    $*ERR.say: '=<< You must login to change your org\'s info';
+    exit 255;
+  }
+  my %data;
+  if ($name//'') eq '' && ($website//'') eq '' && ($email//'') eq '' {
+    %data<name>    = prompt('>>= What would you like your display name to show? ').trim;
+    %data<website> = prompt('>>= What\'s your website? ').trim;
+    %data<email>   = prompt('>>= Public email address? ').trim;
+  } else {
+    %data<name> = $name if ($name//'') ne '';
+    %data<website> = $website if ($website//'') ne '';
+    %data<email> = $email if ($email//'') ne '';
+  }
+  for %data.keys {
+    %data{$_}:delete if %data{$_} eq '';
+  }
+  unless +%data.keys {
+    say '>>= Nothing to update';
+    exit 0;
+  }
+  %data<org> = $org-name;
+  my $response;
+  while ! ($response<success>//False) {
+    $response = try post(
+      '/groups/meta',
+      headers => {'Authorization' => "Zef {config-value('key')}"},
+      :%data,
+    );
+
+    last if $response<success>;
+    if ($response<message>//'') eq 'expired' {
+      $*ERR.say: '=<< Key is expired, please login:';
+      MAIN('login');
+      reload-config;
+      next;
+    }
+    my $error = $response<message> // 'no reason';
+    $*ERR.say: '=<< There was an error: ' ~ $error;
+    exit 255;
+  }
+  $*ERR.say: "=<< $org-name\'s meta info has been updated";
+}
+
 multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
@@ -662,6 +708,7 @@ multi MAIN('org', Bool :h(:$help)?) {
       leave                 drops your membership with \<org-name\> *1
       invite                invites a user to join your org, must be an admin
       mod                   use this to modify a user's role, must be an admin
+      meta                  update your org's meta
 
       
     NOTES\*
