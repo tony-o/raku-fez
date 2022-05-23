@@ -12,6 +12,10 @@ fez is the command line tool used to manage your ecosystem user/pass.
 - [license](#license)
 - [authors](#authors)
 
+### installation
+
+as easy as: `zef install fez`
+
 ### current functionality:
 
 * login
