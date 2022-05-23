@@ -400,7 +400,6 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
   my $ukey = "zef:{config-value('un')}";
   my $response = try get('http://360.zef.pm/meta.json');
   if $response{$ukey} {
-    say $response{$ukey};
     say ">>= Name:    {$response{$ukey}<name>//'<none provided>'}";
     say ">>= Email:   {$response{$ukey}<email>//'<none provided>'}";
     say ">>= Website: {$response{$ukey}<website>//'<none provided>'}";
