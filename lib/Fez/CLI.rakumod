@@ -353,7 +353,8 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     $errors++ if %check.keys;
   }
 
-  if !($meta<auth>.substr(4) (elem) [(config-value('un')//'<unset>'), |(config-value('groups')//[])]) {
+  my @groups = .map({.<group>}) with config-value('groups');
+  if !($meta<auth>.substr(4) (elem) [(config-value('un')//'<unset>'), |@groups]) {
     printf "=<< \"%s\" does not match the username you last logged in with (%s) or a group you belong to,\n=<< you will need to login before uploading your dist\n\n",
            $meta<auth>.substr(4),
            (config-value('un')//'unset');
