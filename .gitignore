@@ -1,6 +1,5 @@
 *.swp
+.DS_Store
 .precomp
 sdist/
-Makefile
-articles/
 resources/lib

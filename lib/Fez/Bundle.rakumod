@@ -8,14 +8,14 @@ my @chandlers = |$CONFIG<bundlers>;
 my @handlers;
 for @chandlers -> $h {
   my $caught = False;
-  CATCH { $caught = True; .resume; }
+  CATCH { dd $_; $caught = True; .resume; }
   require ::("$h");
   next if $caught;
   next unless ::("$h").able;
   next unless ::("$h").^can('bundle');
   @handlers.push: ::("$h").new;
 }
-die 'Unable to find a suitable handler for bundling (tried git and tar), please ensure one is in your path'
+die 'Unable to find a suitable handler for bundling (tried pax, git, and tar), please ensure one is in your path'
   unless @handlers.elems;
 
 sub bundle($target) is export {

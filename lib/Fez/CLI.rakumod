@@ -244,7 +244,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
       $root = @dirs[0];
       my $fn = '';
       for @files -> $f {
-        $fn = $f if $f ~~ /^ ('.'|'..')? $sep? $root $sep 'META6.json'$/;
+        $fn = $f if $f ~~ m/^(".$sep") ** 0..1 $root $sep 'META6.json'$/;
       }
       if (my $data = cat($file, $fn)) {
         from-j($data);
@@ -255,7 +255,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     }
   } or do {
     if $skip-meta {
-      $*ERR.say: '=<< Unable to verify meta, no tar found.';
+      $*ERR.say: '=<< Unable to verify meta';
     } else {
       $*ERR.say: '=<< Unable to find META6.json';
       exit 255;
@@ -296,7 +296,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
     |@l;
   };
   if @files[0] ~~ Failure {
-    $error('Unable to list tar files', :!exit);
+    $error('Unable to list dist files', :!exit);
   } else {
     my @provides = |$meta<provides>.values;
     my @resources = |($meta<resources>//[]);
@@ -355,7 +355,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
 
   my @groups = .map({.<group>}) with config-value('groups');
   if !($meta<auth>.substr(4) (elem) [(config-value('un')//'<unset>'), |@groups]) {
-    printf "=<< \"%s\" does not match the username you last logged in with (%s) or a group you belong to,\n=<< you will need to login before uploading your dist\n\n",
+    printf "=<< \"%s\" does not match the username you last logged in with (%s) or a group you belong to\n=<< you will need to login before uploading your dist\n\n",
            $meta<auth>.substr(4),
            (config-value('un')//'unset');
     exit 255 if $auth-mismatch-error;
@@ -531,7 +531,7 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export 
       exit 255;
     }
   };
-  if False && !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
+  if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
     my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ') !~~ any('y'|'yes'|'n'|'no'|'');
     if $resp ~~ any('n'|'no'|'') {
       $*ERR.say: '=<< Ok, exiting';

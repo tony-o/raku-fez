@@ -1,5 +1,18 @@
 # zef ecosystem - cli
 
+# ***This is a test branch***
+
+To install this branch locally:
+
+```
+$ cd /tmp
+$ git clone --branch refez https://github.com/tony-o/raku-fez
+...
+$ cd raku-fez
+$ zef install .
+```
+
+
 ## fez
 
 fez is the command line tool used to manage your ecosystem user/pass.
