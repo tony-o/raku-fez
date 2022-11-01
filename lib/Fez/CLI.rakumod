@@ -532,8 +532,8 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export 
     }
   };
   if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
-    my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ') !~~ any('y'|'yes'|'n'|'no'|'');
-    if $resp ~~ any('n'|'no'|'') {
+    my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
+    if $resp.lc ~~ any('n'|'no'|'') {
       $*ERR.say: '=<< Ok, exiting';
       exit 255;
     }
