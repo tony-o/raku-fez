@@ -10,9 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     container: tonyodell/rakudo-nightly:latest
     steps:
+      - name: os deps
+        run: |
+          apt update && \
+          apt install -y git
       - name: clone
-        uses: actions/checkout@v3
+        run: git clone -b "${GITHUB_REF##*/}" https://github.com/tony-o/raku-fez ./fez
       - name: module deps
-        run: zef install --deps-only --debug .
+        run: cd ./fez && zef install --deps-only --debug .
       - name: test & installs ok
-        run: zef install .
+        run: cd ./fez && zef install .
