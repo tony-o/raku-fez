@@ -17,6 +17,7 @@
     "Fez::Util::Json": "lib/Fez/Util/Json.rakumod",
     "Fez::Util::Pass": "lib/Fez/Util/Pass.rakumod",
     "Fez::Util::Pax": "lib/Fez/Util/Pax.rakumod",
+    "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
     "Fez::Util::Uri": "lib/Fez/Util/Uri.rakumod",
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
     "Fez::Web": "lib/Fez/Web.rakumod",
