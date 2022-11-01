@@ -195,11 +195,15 @@ zef will prioritize whichever gives the highest version and then the rest depend
 
 when fez bundles your source it outputs to `sdist/<name>.tar.gz` and then uploads that package to the ecosystem.  there are two ways that fez might try to bundle your package. as of `fez:ver<26+>` fez will attempt to remove the sdist/ directory _if no `--file` is manually specified_
 
-#### using git archive
+#### using pax
+
+pax is the bundler included with v38 onward to avoid compatibility issues with certain BSDs.  git archive is no longer used as it caused a lot of confusion - this means that what's on disk is what is getting bundled rather than what is in main/master!
+
+#### using git archive (deprecated with v38)
 
 fez will attempt to run `git archive` which will obey your `.gitignore` files. it is a good idea to put sdist/ in your root gitignore to prevent previously uploaded modules.
 
-#### using tar
+#### using tar (deprecated with v38)
 
 if there is a `tar` in path then fez will try to bundle everything not in hidden directories/files (anything starting with a `.`) and ignore the `sdist/` directory.
 
