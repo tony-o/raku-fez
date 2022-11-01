@@ -584,16 +584,19 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export 
 }
 
 multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
+  MAIN('login') unless config-value('key');
+  my $show-login = False;
   my $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
   if ! $response<success>.so {
     $*ERR.say: "=<< Failed to retrieve user orgs, the following list may be incomplete";
+    $show-login = True;
   }
   if $response<success> {
     write-to-user-config({ groups => $response<groups> });
   } else {
     $*ERR.say: "=<< Failed to update config";
   }
-  my @auths = ["zef:{config-value('un')}", |@($response<groups>).map({"zef:{$_<group>}"})];
+  my @auths = ["zef:{config-value('un')}", |@($response<groups>//()).map({"zef:{$_<group>}"})];
   my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
                              .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
                              .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
@@ -602,6 +605,7 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
                                       !! $^a<name>.lc cmp $^b<name>.lc})
                              .map({$_<dist>});
   say ">>= {+@dists ?? @dists.join("\n>>= ") !! 'No results'}";
+  $*ERR.say("=<< A login may be required to see updated results") if $show-login;
 }
 
 multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
