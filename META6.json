@@ -14,6 +14,7 @@
     "Fez::Util::Config": "lib/Fez/Util/Config.rakumod",
     "Fez::Util::Curl": "lib/Fez/Util/Curl.rakumod",
     "Fez::Util::Date": "lib/Fez/Util/Date.rakumod",
+    "Fez::Util::Glob": "lib/Fez/Util/Glob.rakumod",
     "Fez::Util::Json": "lib/Fez/Util/Json.rakumod",
     "Fez::Util::Pass": "lib/Fez/Util/Pass.rakumod",
     "Fez::Util::Pax": "lib/Fez/Util/Pax.rakumod",
