@@ -12,11 +12,12 @@ method bundle($location) {
                   my $regex = $_.split('*').map({$_ eq '' ?? '.*' !! "'$_'"}).join('');
                   rx/ <$regex> /
                 })
-             !! (); 
+             !! ();
   my @manifest = ls('.'.IO, -> $fn {
        $fn.basename.substr(0,1) ne '.'
     && !any(@ignores.map({ $fn ~~ $_ })).so
   });
+  %*ENV<COPYFILE_DISABLE>='bad_apple_no_cookie_for_you'; #exclude macOS's AppleDouble data files - issue 72
   my $tarczf = run 'pax', '-w', '-z', '-s', '#^#dist/#', '-f', $location, |@manifest, :err, :out;
   die 'Failed to pax: ' ~ $tarczf.err.slurp.trim unless $tarczf.exitcode == 0;
   return False unless $location.IO.f;
