@@ -1,15 +1,9 @@
 # zef ecosystem - cli
 
-# ***This is a test branch***
+To install:
 
-To install this branch locally:
-
-```
-$ cd /tmp
-$ git clone --branch pax https://github.com/tony-o/raku-fez
 ...
-$ cd raku-fez
-$ zef install .
+$ zef install fez
 ```
 
 
