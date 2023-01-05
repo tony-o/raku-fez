@@ -16,7 +16,6 @@ for @chandlers -> $h {
   @handlers.push: ::("$h").new;
 }
 
-dd @handlers;
 die 'Unable to find a suitable handler for bundling (tried pax, and tar), please ensure one is in your path'
   unless @handlers.elems;
 
