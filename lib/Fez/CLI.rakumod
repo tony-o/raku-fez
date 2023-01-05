@@ -596,7 +596,7 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
   } else {
     $*ERR.say: "=<< Failed to update config";
   }
-  my @auths = ["zef:{config-value('un')}", |@($response<groups>//()).map({"zef:{$_<group>}"})];
+  my @auths = ["zef:{config-value('un')}", |($response<groups>//()).map({"zef:{$_<group>}"})];
   my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
                              .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
                              .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
