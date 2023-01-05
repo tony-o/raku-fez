@@ -516,7 +516,7 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
   $*ERR.say: "=<< $org-name\'s meta info has been updated";
 }
 
-multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export {
+multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$force = False, Bool :$unattended = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
     $*ERR.say: '=<< You must login to upload';
@@ -531,8 +531,10 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False) is export 
       exit 255;
     }
   };
-  if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
-    my $resp = prompt('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
+  if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) && !$force {
+    my $resp = $unattended
+            ?? 'n'
+            !! prompt('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
     if $resp.lc ~~ any('n'|'no'|'') {
       $*ERR.say: '=<< Ok, exiting';
       exit 255;
