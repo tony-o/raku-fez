@@ -15,7 +15,8 @@ for @chandlers -> $h {
   next unless ::("$h").^can('bundle');
   @handlers.push: ::("$h").new;
 }
-die 'Unable to find a suitable handler for bundling (tried pax, git, and tar), please ensure one is in your path'
+
+die 'Unable to find a suitable handler for bundling (tried pax, and tar), please ensure one is in your path'
   unless @handlers.elems;
 
 sub bundle($target) is export {

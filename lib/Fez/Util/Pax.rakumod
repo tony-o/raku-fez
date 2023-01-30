@@ -40,6 +40,7 @@ method cat($dist, $file) {
 
 method able {
   my @cmd = 'man', 'pax';
+
   my $p = run @cmd, :out, :err;
   $p.exitcode == 0 && $p.out.slurp ~~ m{<+[\ba..z\s]>+ '-z'};
 }
