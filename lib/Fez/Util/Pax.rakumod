@@ -1,21 +1,18 @@
 unit class Fez::Util::Pax;
 
+use Fez::Util::Glob;
+
 sub ls($x, $ignore) { $x.IO.dir.grep($ignore).map({ $_.d ?? |ls($_, $ignore) !! $_.resolve.relative }); }
 
 method bundle($location) {
   if !('sdist'.IO.d.so) {
     mkdir 'sdist';
   }
-  my $pwd = '.'.IO;
-  my @ignores = $pwd.add('.gitignore').IO.f
-             ?? $pwd.add('.gitignore').IO.slurp.lines.map({
-                  my $regex = $_.split('*').map({$_ eq '' ?? '.*' !! "'$_'"}).join('');
-                  rx/ <$regex> /
-                })
-             !! (); 
+  my $ignorer = '.'.IO.add('.gitignore').IO.f
+             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*')
+             !! parse('.git/*', '.precomp', 'sdist/*');
   my @manifest = ls('.'.IO, -> $fn {
-       $fn.basename.substr(0,1) ne '.'
-    && !any(@ignores.map({ $fn ~~ $_ })).so
+    $ignorer.rmatch($fn.Str)
   });
   my $tarczf = run 'pax', '-w', '-z', '-s', '#^#dist/#', '-f', $location, |@manifest, :err, :out;
   die 'Failed to pax: ' ~ $tarczf.err.slurp.trim unless $tarczf.exitcode == 0;
@@ -42,9 +39,7 @@ method cat($dist, $file) {
 }
 
 method able {
-  my @cmd = $*DISTRO.name eq 'macos'
-         ?? ('man', 'pax')
-         !! ('man', '-c', 'pax');
+  my @cmd = 'man', 'pax';
 
   my $p = run @cmd, :out, :err;
   $p.exitcode == 0 && $p.out.slurp ~~ m{<+[\ba..z\s]>+ '-z'};
