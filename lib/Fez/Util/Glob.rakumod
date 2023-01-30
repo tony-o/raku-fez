@@ -17,7 +17,7 @@ constant %spesh = {'.'=>1, '+'=>1, '*'=>1,
 
 multi sub parse(*@lines, :$want-re = False) is export {
   globbalizer.new(
-    :patterns(@lines.map({my $re = parse($_, :want-re); rx/ <$re> /;}).list),
+    :patterns(@lines.map({my $re = parse($_, :want-re); rx/^ <$re> $/;}).list),
   );
 }
 
