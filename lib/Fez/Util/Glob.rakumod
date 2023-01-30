@@ -5,7 +5,7 @@ class globbalizer {
   method match(Str:D $test --> Bool) { ($test ~~ any @.patterns).so; }
   method rmatch(Str:D $test--> Bool) { !(self.match($test)).so; }
   method filter(*@lines    --> List) { @lines.grep({self.match($_)}).grep(*.defined).list; }
-  method rfilter(*@lines   --> List) { @lines.grep({self.match($_)??False!!True}).grep(*.defined).list; }
+  method rfilter(*@lines   --> List) { @lines.grep({self.rmatch($_)}).grep(*.defined).list; }
 }
 
 constant %spesh = {'.'=>1, '+'=>1, '*'=>1,

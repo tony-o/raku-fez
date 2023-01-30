@@ -8,10 +8,9 @@ method bundle($location) {
   if !('sdist'.IO.d.so) {
     mkdir 'sdist';
   }
-  my $pwd = '.'.IO;
-  my $ignorer = $pwd.add('.gitignore').IO.f
-             ?? parse(|$pwd.add('.gitignore').IO.slurp.lines, '.git/*')
-             !! parse('.git/*', '.*');
+  my $ignorer = '.'.IO.add('.gitignore').IO.f
+             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*')
+             !! parse('.git/*', '.precomp', 'sdist/*');
   my @manifest = ls('.'.IO, -> $fn {
     $ignorer.rmatch($fn.Str)
   });
