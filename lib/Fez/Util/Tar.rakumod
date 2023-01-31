@@ -1,15 +1,21 @@
 unit class Fez::Util::Tar;
 
+use Fez::Util::Glob;
+
 sub ls($x, $ignore) { $x.IO.dir.grep($ignore).map({ $_.d ?? |ls($_, $ignore) !! $_.resolve.relative }); }
 
 method bundle($location) {
   if !('sdist'.IO.d.so) {
     mkdir 'sdist';
   }
-  my $pwd = '.'.IO.resolve.basename;
   my $cwd = $*CWD.resolve;
+  my $pwd = '.'.IO.resolve.basename;
+  my $ignorer = '.'.IO.add('.gitignore').IO.f
+             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*')
+             !! parse('.git', '.precomp', 'sdist/*');
+  my @manifest = ls('.'.IO.absolute, -> $fn { $ignorer.rmatch($fn.relative.Str); })
+               .map({$pwd.IO.add($_)});
   $*CWD = $cwd.add('..').resolve;
-  my @manifest = ls('.'.IO.add($pwd).absolute, { $_.basename.substr(0,1) ne '.' && $_.absolute ne $pwd.IO.parent.absolute });
   my $tarczf = run 'tar', '-czf', $location, |@manifest, :err, :out;
   $*CWD = $cwd;
   die 'Failed to tar and gzip: ' ~ $tarczf.err.slurp.trim unless $tarczf.exitcode == 0;
