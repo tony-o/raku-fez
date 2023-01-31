@@ -8,12 +8,15 @@ method bundle($location) {
   if !('sdist'.IO.d.so) {
     mkdir 'sdist';
   }
+
   my $ignorer = '.'.IO.add('.gitignore').IO.f
              ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*')
              !! parse('.git/*', '.precomp', 'sdist/*');
+             
   my @manifest = ls('.'.IO, -> $fn {
     $ignorer.rmatch($fn.Str)
   });
+  %*ENV<COPYFILE_DISABLE>='bad_apple_no_cookie_for_you'; #exclude macOS's AppleDouble data files - issue 72
   my $tarczf = run 'pax', '-w', '-z', '-s', '#^#dist/#', '-f', $location, |@manifest, :err, :out;
   die 'Failed to pax: ' ~ $tarczf.err.slurp.trim unless $tarczf.exitcode == 0;
   return False unless $location.IO.f;
