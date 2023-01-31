@@ -11,6 +11,7 @@
   "depends":       ["NativeCall"],
   "provides": {
     "Fez": "lib/Fez.rakumod",
+    "Fez::API": "lib/Fez/API.rakumod",
     "Fez::Util::Config": "lib/Fez/Util/Config.rakumod",
     "Fez::Util::Curl": "lib/Fez/Util/Curl.rakumod",
     "Fez::Util::Date": "lib/Fez/Util/Date.rakumod",
@@ -23,7 +24,8 @@
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
     "Fez::Web": "lib/Fez/Web.rakumod",
     "Fez::CLI": "lib/Fez/CLI.rakumod",
-    "Fez::Bundle": "lib/Fez/Bundle.rakumod"
+    "Fez::Bundle": "lib/Fez/Bundle.rakumod",
+    "Fez::Types": "lib/Fez/Types.rakumod"
   },
   "source-url": "https://github.com/tony-o/raku-fez.git",
   "resources": [

@@ -7,157 +7,141 @@ use Fez::Util::Date;
 use Fez::Util::Uri;
 use Fez::Web;
 use Fez::Bundle;
+use Fez::API;
 
 multi MAIN(Bool :v(:$version) where .so) {
   say '>>= fez version: ' ~ $?DISTRIBUTION.meta<ver version>.first(*.so);
 }
 
 multi MAIN('org', 'create', Str $org-name, Str $org-email) {
-  my $response = get('/group?' ~ pct-encode({
-                        group => $org-name,
-                        email => $org-email,
-                      }),
-                      headers => {'Authorization' => "Zef {config-value('key')}"});
-  if $response<success> {
+  my $response = org-create(config-value('key'), $org-name, $org-email);
+  if $response.success {
     say ">>= You're the proud new admin of $org-name";
-    $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
-    if ! $response<success>.so {
+    $response = org-list(config-value('key'));
+    if ! $response.success {
       $*ERR.say: "=<< Failed to retrieve user orgs";
       exit 255;
     }
-    if $response<success> {
-      write-to-user-config({ groups => $response<groups> });
+    if $response.success {
+      write-to-user-config({ groups => $response.groups });
     } else {
       $*ERR.say: "=<< Failed to update config";
       exit 1;
     }
   } else {
-    $*ERR.say: "=<< $response<message>";
+    $*ERR.say: "=<< {$response.message}";
     exit 255;
   }
 }
 
 multi MAIN('org', 'leave', Str $org-name) {
-  my $response = post('/groups?' ~ pct-encode({ group => $org-name }),
-                      method => 'DELETE',
-                      headers => {'Authorization' => "Zef {config-value('key')}"});
-  if $response<success> {
+  my $response = org-leave(config-value('key'), $org-name);
+  if $response.success {
     say ">>= You're no longer in $org-name";
-    $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
-    if ! $response<success>.so {
+    $response = org-list(config-value('key'));
+    if ! $response.success {
       $*ERR.say: "=<< Failed to retrieve user orgs";
       exit 255;
     }
-    if $response<success> {
-      write-to-user-config({ groups => $response<groups> });
+    if $response.success {
+      write-to-user-config({ groups => $response.groups });
     } else {
       $*ERR.say: "=<< Failed to update config";
       exit 1;
     }
   } else {
-    $*ERR.say: "=<< $response<message>";
+    $*ERR.say: "=<< {$response.message}";
     exit 255;
   }
 }
 
 multi MAIN('org', 'accept', Str $org-name) {
-  my $response = post('/groups?' ~ pct-encode({ group => $org-name }),
-                      method => 'PUT',
-                      headers => {'Authorization' => "Zef {config-value('key')}"});
-  if $response<success> {
+  my $response = org-join(config-value('key'), $org-name);
+  if $response.success {
     say ">>= You're now a very nice member of $org-name";
-    $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
-    if ! $response<success>.so {
+    $response = org-list(config-value('key'));
+    if ! $response.success {
       $*ERR.say: "=<< Failed to retrieve user orgs";
       exit 255;
     }
-    if $response<success> {
-      write-to-user-config({ groups => $response<groups> });
+    if $response.success {
+      write-to-user-config({ groups => $response.groups });
     } else {
       $*ERR.say: "=<< Failed to update config";
       exit 1;
     }
   } else {
-    $*ERR.say: "=<< $response<message>";
+    $*ERR.say: "=<< {$response.message}";
     exit 255;
   }
 }
 
 multi MAIN('org', 'pending') {
-  my $response = get('/groups/invites', headers => {'Authorization' => "Zef {config-value('key')}"});
-  if $response<success> {
-    say '>>= R Org' if +@($response<groups>);
-    for @($response<groups>).sort({ $^a<role> eq $^b<role> ?? $^a<group> cmp $^b<group> !! $^a<role> cmp $^b<role> }) -> %g {
+  my $response = org-pending(config-value('key'));
+  if $response.success {
+    say '>>= No pending invites found' unless $response.groups;
+    say '>>= R Org' if $response.groups;
+    for $response.groups.sort({ $^a<role> eq $^b<role> ?? $^a<group> cmp $^b<group> !! $^a<role> cmp $^b<role> }) -> %g {
       say ">>= {%g<role>.substr(0,1)} {%g<group>}";
     }
   } else {
-    $*ERR.say: "=<< Failed. $response<message>";
+    $*ERR.say: "=<< Failed. {$response.message}";
     exit 255;
   }
 }
 
 multi MAIN('org', 'members', Str $org-name) {
-  my $response = post('/groups/members',
-                      data => {
-                        group => $org-name,
-                      },
-                      headers => {'Authorization' => "Zef {config-value('key')}"});
-  if $response<success> {
-    say '>>= R Org Name' if +@($response<members>);
-    for @($response<members>).sort({ $^a<role> eq $^b<role> ?? $^a<username> cmp $^b<username> !! $^a<role> cmp $^b<role> }) -> %m {
+  my $response = org-members(config-value('key'), $org-name);
+  if $response.success {
+    say '>>= No members' unless $response.members; # Weird edge case
+    say '>>= R Org Name' if $response.members;
+    for $response.members.sort({ $^a<role> eq $^b<role> ?? $^a<username> cmp $^b<username> !! $^a<role> cmp $^b<role> }) -> %m {
       say ">>= {%m<role>.substr(0,1)} {%m<username>}"
     }
   } else {
-    $*ERR.say: "=<< Failed. $response<message>";
+    $*ERR.say: "=<< Failed. {$response.message}";
     exit 255;
   }
 }
 
 multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) {
-  my $response = post('/groups?' ~ pct-encode({ :$role, group => $org-name, :$user }),
-                     headers => {Authorization => "Zef {config-value('key')}"});
-  if $response<success> {
+  my $response = org-invite(config-value('key'), $org-name, $role, $user);
+  if $response.success {
     say '>>= Invitation sent';
   } else {
-    $*ERR.say: '=<< Failed: ' ~ $response<message>;
+    $*ERR.say: '=<< Failed: ' ~ $response.message;
     exit 255;
   }
 }
 
 multi MAIN('org', 'mod', Str $org-name, Str $role, Str $user) {
-  my $response = post('/group?' ~ pct-encode({ :$role, group => $org-name, :$user }),
-                      headers => {Authorization => "Zef {config-value('key')}"},
-                      method  => 'PATCH');
-  if $response<success> {
+  my $response = org-mod(config-value('key'), $org-name, $role, $user);
+  if $response.success {
     say '>>= User\'s role was modified';
   } else {
-    $*ERR.say: '=<< Failed: ' ~ $response<message>;
+    $*ERR.say: '=<< Failed: ' ~ $response.message;
     exit 255;
   }
 }
 
 multi MAIN('reset-password') is export {
   my $un = prompt('>>= Username: ') while ($un//'').chars < 3;
-  my $response = get('/init-password-reset?auth=' ~ pct-encode($un));
-  if ! $response<success>.so {
+  my $response = init-reset-password($un);
+  if ! $response.success {
     $*ERR.say: '=<< There was an error communicating with the service, please';
-    say '    try again in a few minutes.';
+    $*ERR.say: '    try again in a few minutes.';
     exit 255;
   }
   say '>>= A reset key was successfully requested, please check your email';
-  my $key  = prompt('>>= What is the key in your email? ') while ($key//'') eq '';
+  my $key  = prompt('>>= What is the key in your email (ctrl+c to cancel)? ') while ($key//'') eq '';
   my $pass = getpass('>>= New Password: ') while ($pass//'').chars < 8;
-  $response = post('/password-reset', data => {
-    auth     => $un,
-    key      => $key,
-    password => $pass,
-  });
-  if ! $response<success>.so {
+  $response = reset-password($un, $key, $pass);
+  if ! $response.success {
     $*ERR.say: "=<< Password reset failed: {$response<message>}";
     exit 255;
   }
   write-to-user-config({
-    key => $response<key>,
+    key => $response.key,
     un  => $un,
   });
   say ">>= Password reset successful, you now have a new key and can upload dists";
@@ -175,13 +159,10 @@ multi MAIN('register') is export {
   $pw = getpass('>>= Password: ')  while ($pw//'').chars < 8
                                       && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
 
-  my $response = post(
-    '/register',
-    data => { username => $un, email => $em, password => $pw },
-  );
+  my $response = register($em, $un, $pw);
 
-  if ! $response<success>.so {
-    $*ERR.say: "=<< Registration failed: {$response<message>}";
+  if ! $response.success {
+    $*ERR.say: "=<< Registration failed: {$response.message}";
     exit 255;
   }
   say ">>= Registration successful, requesting auth key";
@@ -201,18 +182,15 @@ multi MAIN('login') is export {
   $pw = getpass('>>= Password: ')  while ($pw//'').chars < 8
                                       && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
 
-  my $response = post(
-    '/login',
-    data => { username => $un, password => $pw, }
-  );
-  if ! $response<success>.so {
-    $*ERR.say: "=<< Failed to login: {$response<message>}";
+  my $response = login($un, $pw);
+  if ! $response.success {
+    $*ERR.say: "=<< Failed to login: {$response.message}";
     exit 255;
   }
 
-  my $ukey = $response<key>;
-  $response = get('/groups', headers => {'Authorization' => "Zef $ukey"});
-  if ! $response<success>.so {
+  my $ukey = $response.key;
+  $response = org-list($ukey);
+  if ! $response.success {
     $*ERR.say: "=<< Failed to retrieve user groups";
     exit 255;
   }
@@ -220,7 +198,7 @@ multi MAIN('login') is export {
   write-to-user-config({
     key    => $ukey,
     un     => $un,
-    groups => $response<groups>,
+    groups => $response.groups,
   });
   say ">>= Login successful, you can now upload dists";
 }
@@ -425,26 +403,18 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
   for %data.keys {
     %data{$_}:delete if %data{$_} eq '';
   }
-  unless +%data.keys {
-    say '>>= Nothing to update';
-    exit 0;
-  }
-  $response = Any;
-  while ! ($response<success>//False) {
-    $response = try post(
-      '/update-meta',
-      headers => {'Authorization' => "Zef {config-value('key')}"},
-      :%data,
-    );
+  $response = Fez::Types::api-response.new(:!success);
+  while ! ($response.success//False) {
+    $response = update-meta(config-value('key'), %data<name>, %data<website>, %data<email>);
 
-    last if $response<success>;
-    if ($response<message>//'') eq 'expired' {
+    last if $response.success;
+    if ($response.message//'') eq 'expired' {
       $*ERR.say: '=<< Key is expired, please login:';
       MAIN('login');
       reload-config;
       next;
     }
-    my $error = $response<message> // 'no reason';
+    my $error = $response.message // 'no reason';
     $*ERR.say: '=<< There was an error, please try again in a few minutes';
     exit 255;
   }
@@ -458,10 +428,11 @@ multi MAIN('org', 'list') is export {
     exit 255;
   }
 
-  my $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
-  if $response<success>//False {
-    say '>>= R Org Name' if +@($response<groups>);
-    for @($response<groups>) -> $g {
+  my $response = org-list(config-value('key'));
+  if $response.success {
+    say '>>= Not a member of any orgs, yet' unless $response.groups;
+    say '>>= R Org Name' if $response.groups;
+    for $response.groups -> $g {
       say ">>= {$g<role>.substr(0,1)} {$g<group>}";
     }
   } else {
@@ -494,22 +465,18 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
     exit 0;
   }
   %data<org> = $org-name;
-  my $response;
-  while ! ($response<success>//False) {
-    $response = try post(
-      '/groups/meta',
-      headers => {'Authorization' => "Zef {config-value('key')}"},
-      :%data,
-    );
+  my $response = Fez::Types::api-response.new(:!success);
+  while ! ($response.success//False) {
+    $response = try update-org-meta(config-value('key'), $org-name, %data<name>, %data<website>, %data<email>);
 
-    last if $response<success>;
-    if ($response<message>//'') eq 'expired' {
+    last if $response.success;
+    if ($response.message//'') eq 'expired' {
       $*ERR.say: '=<< Key is expired, please login:';
       MAIN('login');
       reload-config;
       next;
     }
-    my $error = $response<message> // 'no reason';
+    my $error = $response.message // 'no reason';
     $*ERR.say: '=<< There was an error: ' ~ $error;
     exit 255;
   }
@@ -531,41 +498,35 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$for
       exit 255;
     }
   };
-  if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) && !$force {
-    my $resp = $unattended
-            ?? 'n'
-            !! prompt('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
-    if $resp.lc ~~ any('n'|'no'|'') {
-      $*ERR.say: '=<< Ok, exiting';
-      exit 255;
+  if !$force {
+    if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
+      my $resp = $unattended
+              ?? 'n'
+              !! prompt('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
+      if $resp.lc ~~ any('n'|'no'|'') {
+        $*ERR.say: '=<< Ok, exiting';
+        exit 255;
+      }
     }
   }
 
 
-  my $response;
-  while ! ($response<success>//False) {
-    $response = get(
-      '/upload',
-      headers => {'Authorization' => "Zef {config-value('key')}"},
-    );
+  my $response = Fez::Types::api-response.new(:!success);
+  while ! ($response.success//False) {
+    $response = upload(config-value('key'), $fn.IO);
 
-    last if $response<success>;
-    if ($response<message>//'') eq 'expired' {
+    last if $response.success;
+    if ($response.message//'') eq 'expired' {
       $*ERR.say: '=<< Key is expired, please login:';
       MAIN('login');
       reload-config;
       next;
     }
-    my $error = $response<message> // 'no reason';
+    my $error = $response.message // 'no reason';
     $*ERR.say: "=<< Something went wrong while authenticating: $error. Do you need to run 'fez login' again?";
     exit 255;
   }
 
-  my $upload = post(
-     $response<key>,
-     :method<PUT>,
-     :file($fn.IO.absolute),
-  );
   if '' eq $file && !$save-autobundle {
     try {
       CATCH { default {
@@ -588,17 +549,17 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$for
 multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
   MAIN('login') unless config-value('key');
   my $show-login = False;
-  my $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
-  if ! $response<success>.so {
+  my $response = org-list(config-value('key'));
+  if ! $response.success {
     $*ERR.say: "=<< Failed to retrieve user orgs, the following list may be incomplete";
     $show-login = True;
   }
-  if $response<success> {
-    write-to-user-config({ groups => $response<groups> });
+  if $response.success {
+    write-to-user-config({ groups => $response.groups });
   } else {
     $*ERR.say: "=<< Failed to update config";
   }
-  my @auths = ["zef:{config-value('un')}", |($response<groups>//()).map({"zef:{$_<group>}"})];
+  my @auths = ["zef:{config-value('un')}", |($response.groups//()).map({"zef:{$_<group>}"})];
   my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
                              .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
                              .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
@@ -611,16 +572,16 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
 }
 
 multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
-  my $response = get('/groups', headers => {'Authorization' => "Zef {config-value('key')}"});
-  if ! $response<success>.so {
+  my $response = org-list(config-value('key'));
+  if ! $response.success {
     $*ERR.say: "=<< Failed to retrieve user orgs, the following list may be incomplete";
   }
-  if $response<success> {
+  if $response.success {
     write-to-user-config({ groups => $response<groups> });
   } else {
     $*ERR.say: "=<< Failed to update config";
   }
-  my @auths = ["zef:{config-value('un')}", |@($response<groups>).map({"zef:{$_<group>}"})];
+  my @auths = ["zef:{config-value('un')}", |@($response.groups//[]).map({"zef:{$_<group>}"})];
   my $d = (get($url)||[]).grep({$_<auth> (elem) @auths})
                             .grep({$dist eq $_<dist>})
                             .first;
@@ -637,12 +598,8 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
       exit 255;
     }
   };
-  $response = try post(
-    '/remove',
-    headers => {'Authorization' => "Zef {config-value('key')}"},
-    :data(dist => $d<dist>),
-  );
-  if $response<success> {
+  $response = remove(config-value('key'), $d<dist>);
+  if $response.success {
     say '>>= Request received';
     exit 0;
   }
