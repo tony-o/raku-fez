@@ -1,5 +1,6 @@
-unit package Fez::CLI;
+unit module Fez::CLI::Usr;
 
+use Fez::Logr;
 use Fez::Util::Pass;
 use Fez::Util::Json;
 use Fez::Util::Config;
@@ -9,11 +10,11 @@ use Fez::Web;
 use Fez::Bundle;
 use Fez::API;
 
-multi MAIN(Bool :v(:$version) where .so) {
+multi MAIN(Bool :v(:$version) where .so) is export {
   say '>>= fez version: ' ~ $?DISTRIBUTION.meta<ver version>.first(*.so);
 }
 
-multi MAIN('org', 'create', Str $org-name, Str $org-email) {
+multi MAIN('org', 'create', Str $org-name, Str $org-email) is export {
   my $response = org-create(config-value('key'), $org-name, $org-email);
   if $response.success {
     say ">>= You're the proud new admin of $org-name";
@@ -34,7 +35,7 @@ multi MAIN('org', 'create', Str $org-name, Str $org-email) {
   }
 }
 
-multi MAIN('org', 'leave', Str $org-name) {
+multi MAIN('org', 'leave', Str $org-name) is export {
   my $response = org-leave(config-value('key'), $org-name);
   if $response.success {
     say ">>= You're no longer in $org-name";
@@ -55,7 +56,7 @@ multi MAIN('org', 'leave', Str $org-name) {
   }
 }
 
-multi MAIN('org', 'accept', Str $org-name) {
+multi MAIN('org', 'accept', Str $org-name) is export {
   my $response = org-join(config-value('key'), $org-name);
   if $response.success {
     say ">>= You're now a very nice member of $org-name";
@@ -76,7 +77,7 @@ multi MAIN('org', 'accept', Str $org-name) {
   }
 }
 
-multi MAIN('org', 'pending') {
+multi MAIN('org', 'pending') is export {
   my $response = org-pending(config-value('key'));
   if $response.success {
     say '>>= No pending invites found' unless $response.groups;
@@ -90,7 +91,7 @@ multi MAIN('org', 'pending') {
   }
 }
 
-multi MAIN('org', 'members', Str $org-name) {
+multi MAIN('org', 'members', Str $org-name) is export {
   my $response = org-members(config-value('key'), $org-name);
   if $response.success {
     say '>>= No members' unless $response.members; # Weird edge case
@@ -104,7 +105,7 @@ multi MAIN('org', 'members', Str $org-name) {
   }
 }
 
-multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) {
+multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) is export {
   my $response = org-invite(config-value('key'), $org-name, $role, $user);
   if $response.success {
     say '>>= Invitation sent';
@@ -114,7 +115,7 @@ multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) {
   }
 }
 
-multi MAIN('org', 'mod', Str $org-name, Str $role, Str $user) {
+multi MAIN('org', 'mod', Str $org-name, Str $role, Str $user) is export {
   my $response = org-mod(config-value('key'), $org-name, $role, $user);
   if $response.success {
     say '>>= User\'s role was modified';
@@ -653,7 +654,7 @@ multi MAIN('plugin', Bool :h(:$help)?) is export {
 }
 
 multi MAIN('org', 'help') { MAIN('org', :h); }
-multi MAIN('org', Bool :h(:$help)?) {
+multi MAIN('org', Bool :h(:$help)?) is export {
   note qq:to/END/
     Fez - Raku / Perl6 package utility
 
@@ -684,7 +685,7 @@ multi MAIN('org', Bool :h(:$help)?) {
 }
 
 multi MAIN('help') { MAIN(:h); }
-multi MAIN(Bool :h(:$help)?) {
+multi MAIN(Bool :h(:$help)?) is export {
   note qq:to/END/
     Fez - Raku / Perl6 package utility
 
@@ -694,16 +695,24 @@ multi MAIN(Bool :h(:$help)?) {
 
     COMMANDS
 
-      register              registers you up for a new account
-      login                 logs you in and saves your key info
-      upload                creates a distribution tarball and uploads
-      meta                  update your public meta info (website, email, name)
-      reset-password        initiates a password reset using the email
-                            that you registered with
-      list                  lists the dists for the currently logged in user
-      remove                removes a dist from the ecosystem (requires fully
-                            qualified dist name, copy from `list` if in doubt)
-      org                   org actions, use `fez org help` for more info
+      DIST MANAGEMENT
+
+        init                  initializes a new module
+        resource              creates a new resource file at the given path, creat-
+                              ing the path if necessary
+
+      RELEASE MANAGEMENT
+
+        register              registers you up for a new account
+        login                 logs you in and saves your key info
+        upload                creates a distribution tarball and uploads
+        meta                  update your public meta info (website, email, name)
+        reset-password        initiates a password reset using the email
+                              that you registered with
+        list                  lists the dists for the currently logged in user
+        remove                removes a dist from the ecosystem (requires fully
+                              qualified dist name, copy from `list` if in doubt)
+        org                   org actions, use `fez org help` for more info
 
     ENV OPTIONS
 
@@ -716,6 +725,118 @@ multi MAIN(Bool :h(:$help)?) {
 
   END
 }
+
+multi MAIN('init', Str $module is copy = '') is export {
+  if '.'.IO.dir.elems {
+    log(FATAL, "directory not empty, will not proceed\n");
+  }
+
+  $module       = prompt('>>= Module name? ') while ($module//'').chars == 0;
+  my @module-parts = $module.split('::', :skip-empty);
+  my $module-file  = @module-parts.pop ~ ".rakumod";
+  my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
+
+  log(DEBUG, "module-parts:%s\nmodule-file:%s\nmodule-path:%s", @module-parts.join(', '), $module-file, $module-path);
+
+  my $root := 'lib'.IO;
+  mkdir $root.absolute;
+  while @module-parts.elems {
+    $root := $root.add(@module-parts.shift);
+    mkdir $root.absolute;
+  }
+
+  my $auth = '';
+  if ?config-value('un') ne '' {
+    log(DEBUG, "found auth zef:%s", config-value('un'));
+    $auth = "zef:{config-value('un')}";
+  } else {
+    log(INFO, "no auth found for the zef ecosystem, creating with empty auth str");
+  }
+
+  log(DEBUG, 'creating meta file');
+  'META6.json'.IO.spurt: to-j({
+    "name" => "$module",
+    "ver" =>  "0.0.1",
+    "auth" => "$auth",
+
+    "description" => "A brand new and very nice module",
+
+    "depends" => [],
+    "build-depends" => [],
+
+    "resources" => [],
+
+    "provides" => {
+      "$module" => "$module-path"
+    }
+  });
+
+  log(DEBUG, 'creating empty unit module file');
+  $module-path.IO.spurt: "unit module $module;";
+
+  log(DEBUG, 'creating empty lock file');
+  'fez.lock'.IO.spurt: '';
+}
+
+multi MAIN('resource', Str:D $path) is export {
+  if $path ~~ m{'#'|'<'|'>'|'$'|'+'|'%'|'!'|'`'|'&'|'*'|'\''|'|'|'{'|'}'|'?'|'"'|'='|':'|' '|'@'} {
+    log(FATAL, '%s contains a poor choice of characters, please remove any #<>$+%%>!`&*\'|{}?"=: @', $path);
+  }
+
+
+  my $cwd = '.'.IO.resolve;
+  if !$cwd.add('META6.json').IO.f {
+    my $before = $cwd;
+    while !$cwd.add('META6.json').IO.f {
+      $before = $cwd;
+      $cwd := $cwd.parent;
+      if $before.absolute eq $cwd.absolute {
+        log(FATAL, 'could not find META6.json');
+      }
+    }
+  }
+  log(DEBUG, "found META6.json in {$cwd.relative}");
+
+  my $resource-dir =  $cwd.add('resources');
+
+  my &ensure-resource-in-meta = sub {
+    log(DEBUG, 'ensuring resource is in meta: %s', $path);
+    my %meta = from-j($cwd.add('META6.json').slurp);
+    if (%meta<resources>||[]).grep($path).elems == 0 {
+      log(INFO, 'Resource is not in META, adding it');
+      %meta<resources> = [|%meta<resources>, $path];
+      $cwd.add('META6.json').spurt: to-j(%meta);
+    }
+  };
+
+  if $resource-dir.add($path).e {
+    log(INFO, 'Resource exists - not creating any directories or files');
+    ensure-resource-in-meta;
+    exit 0;
+  }
+
+  if $path ~~ m/(^|'/'|'\\')'..'('/'|'\\'|$)/ {
+    log(FATAL, "Cannot create resources outside of the project resources/ dir or with relative paths\nWhatever path is provided will automatically reside under {$resource-dir.absolute}");
+  }
+
+  my @parts = $path.IO.relative.split($*DISTRO.is-win??'\\'!!'/', :skip-empty);
+  my $fname = @parts.pop;
+  my $cdir := $resource-dir;
+
+  log(DEBUG, 'resolving: %s', @parts.join('/'));
+  while @parts.elems {
+    $cdir = $cdir.add(@parts.shift);
+    log(DEBUG, "making {$cdir.absolute}") unless $cdir.IO.d;
+    log(DEBUG, "skip {$cdir.absolute}") if $cdir.IO.d;
+    mkdir $cdir unless $cdir.IO.d;
+  }
+
+  log(DEBUG, 'creating resource:');
+  $cdir.add($fname).spurt: '';
+  ensure-resource-in-meta;
+}
+
+
 
 #multi MAIN(*@p, *%n) {
 #  ## load extensions
