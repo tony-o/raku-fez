@@ -6,6 +6,7 @@ use Fez::Util::Json;
 use Fez::Util::Config;
 use Fez::Util::Date;
 use Fez::Util::Uri;
+use Fez::Util::META6;
 use Fez::Web;
 use Fez::Bundle;
 use Fez::API;
@@ -700,6 +701,11 @@ multi MAIN(Bool :h(:$help)?) is export {
         init                  initializes a new module
         resource              creates a new resource file at the given path, creat-
                               ing the path if necessary
+        depends               add a build or runtime dependency to the meta
+        cmd                   list commands this module provides
+        run                   runs a command listed in `cmd`
+        refresh               attempts to update the META6 from the file system
+                              this does NOT prompt before overwriting
 
       RELEASE MANAGEMENT
 
@@ -735,8 +741,9 @@ multi MAIN('init', Str $module is copy = '') is export {
   my @module-parts = $module.split('::', :skip-empty);
   my $module-file  = @module-parts.pop ~ ".rakumod";
   my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
+  my $dist-name = S:g/'::'/-/ given $module;
 
-  log(DEBUG, "module-parts:%s\nmodule-file:%s\nmodule-path:%s", @module-parts.join(', '), $module-file, $module-path);
+  log(DEBUG, "module-parts:%s\nmodule-file:%s\nmodule-path:%s\n  dist-name:%s", @module-parts.join(', '), $module-file, $module-path, $dist-name);
 
   my $root := 'lib'.IO;
   mkdir $root.absolute;
@@ -755,7 +762,7 @@ multi MAIN('init', Str $module is copy = '') is export {
 
   log(DEBUG, 'creating meta file');
   'META6.json'.IO.spurt: to-j({
-    "name" => "$module",
+    "name" => "$dist-name",
     "ver" =>  "0.0.1",
     "auth" => "$auth",
 
@@ -776,6 +783,95 @@ multi MAIN('init', Str $module is copy = '') is export {
 
   log(DEBUG, 'creating empty lock file');
   'fez.lock'.IO.spurt: '';
+
+  log(DEBUG, 'making test directory');
+  mkdir 't';
+  
+  't'.IO.add('00-use.t').spurt: qq:to/EOF/;
+    use Test;
+
+    plan 1;
+
+    use-ok "$module";
+  EOF
+}
+
+multi MAIN('depends', Str:D $dist, Bool :$build = False) is export {
+  my $cwd = upcurse-meta();
+  log(FATAL, 'could not find META6.json') unless $cwd;
+  log(DEBUG, "found META6.json in {$cwd.relative}");
+
+  log(DEBUG, 'inspecting meta file');
+  my $dep-key = "{$build??'build-'!!''}depends";
+  my %meta = from-j($cwd.add('META6.json').slurp);
+  if (%meta{$dep-key}||[]).grep($dist).elems == 0 {
+    log(DEBUG, "did not find dependency (%s) in %s", $dist, $dep-key);
+    %meta{$dep-key} = [] unless %meta{$dep-key};
+    %meta{$dep-key}.push($dist);
+    $cwd.add('META6.json').spurt: to-j(%meta);
+    log(MSG, "%s was not found in %s so it was added", $dist, $dep-key);
+  } else {
+    log(MSG, "%s already exists in %s", $dist, $dep-key);
+  }
+}
+
+multi MAIN(Str:D $ where * ~~ 'command'|'cmd') is export {
+  my $cwd = upcurse-meta();
+  log(FATAL, 'could not find META6.json') unless $cwd;
+  log(DEBUG, "found META6.json in {$cwd.relative}");
+
+  my $dist-cfg = $cwd.add('.zef');
+
+  $dist-cfg.spurt(to-j({:commands({
+    :test(["zef","test","."]),
+  })})) unless $dist-cfg.f;
+
+  my $cfg = from-j($dist-cfg.slurp);
+
+  my $m = max $cfg<commands>.keys.map(*.chars);
+
+  for $cfg<commands>.keys.sort -> $k {
+    log(MSG, "%-{$m}s: %s", $k, $cfg<commands>{$k});
+  }
+}
+
+multi MAIN(Str:D $ where * ~~ 'r'|'run', Str:D $command, :$timeout is copy) is export {
+  my $cwd = upcurse-meta();
+  log(FATAL, 'could not find META6.json') unless $cwd;
+
+  my $dist-cfg = $cwd.add('.zef');
+
+  $dist-cfg.spurt(to-j({:commands({
+    :test(["zef", "test", "."]),
+  })})) unless $dist-cfg.f;
+
+  my $cfg = from-j($dist-cfg.slurp);
+  
+  log(FATAL, '"%s" command not found\navailable commands: %s', $command, $cfg<commands>.keys.sort.join(', '))
+    unless $cfg<commands>{$command};
+
+  my @cmd = |$cfg<commands>{$command};
+
+  my $proc = Proc::Async.new: |@cmd;
+
+  $timeout = $timeout.defined ?? $timeout !! $cfg<command_timeout> || 300;
+  react {
+    whenever $proc.stdout.lines { $_ ~~ s:g/'%'/%%/; log( INFO, $_); };
+    whenever $proc.stderr.lines { $_ ~~ s:g/'%'/%%/; log(ERROR, $_); };
+    whenever $proc.start {
+      exit 0;
+    };
+    whenever signal(SIGTERM).merge: signal(SIGINT) {
+      once {
+        log(INFO, 'Attempting to kill process...');
+        try $proc.kill: SIGKILL;
+      }
+    };
+    whenever Promise.in($timeout) {
+      try $proc.kill: SIGKILL;
+      log(FATAL, 'Process timed out');
+    }
+  };
 }
 
 multi MAIN('resource', Str:D $path) is export {
@@ -784,18 +880,8 @@ multi MAIN('resource', Str:D $path) is export {
   }
 
 
-  my $cwd = '.'.IO.resolve;
-  if !$cwd.add('META6.json').IO.f {
-    my $before = $cwd;
-    while !$cwd.add('META6.json').IO.f {
-      $before = $cwd;
-      $cwd := $cwd.parent;
-      if $before.absolute eq $cwd.absolute {
-        log(FATAL, 'could not find META6.json');
-      }
-    }
-  }
-  log(DEBUG, "found META6.json in {$cwd.relative}");
+  my $cwd = upcurse-meta();
+  log(FATAL, 'could not find META6.json') unless $cwd;
 
   my $resource-dir =  $cwd.add('resources');
 
@@ -803,14 +889,14 @@ multi MAIN('resource', Str:D $path) is export {
     log(DEBUG, 'ensuring resource is in meta: %s', $path);
     my %meta = from-j($cwd.add('META6.json').slurp);
     if (%meta<resources>||[]).grep($path).elems == 0 {
-      log(INFO, 'Resource is not in META, adding it');
+      log(MSG, 'Resource is not in META, adding it');
       %meta<resources> = [|%meta<resources>, $path];
       $cwd.add('META6.json').spurt: to-j(%meta);
     }
   };
 
   if $resource-dir.add($path).e {
-    log(INFO, 'Resource exists - not creating any directories or files');
+    log(MSG, 'Resource exists - not creating any directories or files');
     ensure-resource-in-meta;
     exit 0;
   }

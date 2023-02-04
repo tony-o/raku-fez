@@ -22,6 +22,7 @@
     "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
     "Fez::Util::Uri": "lib/Fez/Util/Uri.rakumod",
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
+    "Fez::Util::META6": "lib/Fez/Util/META6.rakumod",
     "Fez::Web": "lib/Fez/Web.rakumod",
     "Fez::CLI": "lib/Fez/CLI.rakumod",
     "Fez::Logr": "lib/Fez/Logr.rakumod",

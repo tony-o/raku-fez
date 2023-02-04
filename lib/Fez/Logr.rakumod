@@ -1,6 +1,6 @@
 unit module Fez::Logr;
 
-enum LOGLEVEL is export <DEBUG INFO WARN ERROR FATAL>;
+enum LOGLEVEL is export <DEBUG INFO WARN ERROR FATAL MSG>;
 
 state $LOGR     = Supplier.new;
 state $LOGLEVEL = ERROR;
@@ -13,7 +13,10 @@ sub log(LOGLEVEL:D $prefix, Str:D $msg, *@args) is export {
 
 sub s(LOGLEVEL:D $prefix, Str:D $msg, *@args) {
   my $out = sprintf($msg, |@args).lines.map({(' ' x 11)~$_}).join("\n").trim ~ "\n";
-  if $prefix ~~ DEBUG|INFO {
+
+  if $prefix ~~ MSG {
+    print ">>= $out";
+  } elsif $prefix ~~ DEBUG|INFO {
     print ">>= {$prefix ~~ DEBUG??'DEBUG'!!' INFO'}: $out";
   } else {
     $*ERR.print: "=<< {$prefix ~~ WARN??' WARN'!!$prefix~~ERROR??'ERROR'!!'FATAL'}: $out";
