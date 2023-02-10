@@ -1,5 +1,7 @@
 unit module Fez::CLI;
 
+my Bool $UNATTENDED = False;
+
 use Fez::Logr;
 use Fez::Util::Pass;
 use Fez::Util::Json;
@@ -7,12 +9,33 @@ use Fez::Util::Config;
 use Fez::Util::Date;
 use Fez::Util::Uri;
 use Fez::Util::META6;
+use Fez::Util::FS;
 use Fez::Web;
 use Fez::Bundle;
 use Fez::API;
 
-multi MAIN(Bool :v(:$version) where .so) is export {
-  say '>>= fez version: ' ~ $?DISTRIBUTION.meta<ver version>.first(*.so);
+set-loglevel(DEBUG) if (@*ARGS.grep({$_ ~~ m/^'-''v'+$/}).first||' ').chars - 1 != 0;
+@*ARGS = @*ARGS.grep({$_ !~~ m/^'-''v'+$/});
+$UNATTENDED = @*ARGS.grep(* ~~ '--unattended').elems > 0;
+@*ARGS = @*ARGS.grep(* ne '--unattended');
+log(DEBUG, 'Running in unattended mode') if $UNATTENDED;
+
+sub pass-wrapper(Str:D $prompt --> Str) {
+  if $UNATTENDED {
+    log(FATAL, 'Unable to prompt while --unattended is in use');
+  }
+  getpass($prompt);
+}
+
+sub prompt-wrapper(Str:D $prompt --> Str) {
+  if $UNATTENDED {
+    log(FATAL, 'Unable to prompt while --unattended is in use');
+  }
+  prompt($prompt);
+}
+
+multi MAIN(Str $_ where * ~~ 'v'|'version') is export {
+  say '>>= fez version: ' ~ $?DISTRIBUTION.meta<version>;
 }
 
 multi MAIN('org', 'create', Str $org-name, Str $org-email) is export {
@@ -127,7 +150,7 @@ multi MAIN('org', 'mod', Str $org-name, Str $role, Str $user) is export {
 }
 
 multi MAIN('reset-password') is export {
-  my $un = prompt('>>= Username: ') while ($un//'').chars < 3;
+  my $un = prompt-wrapper('>>= Username: ') while ($un//'').chars < 3;
   my $response = init-reset-password($un);
   if ! $response.success {
     $*ERR.say: '=<< There was an error communicating with the service, please';
@@ -135,8 +158,8 @@ multi MAIN('reset-password') is export {
     exit 255;
   }
   say '>>= A reset key was successfully requested, please check your email';
-  my $key  = prompt('>>= What is the key in your email (ctrl+c to cancel)? ') while ($key//'') eq '';
-  my $pass = getpass('>>= New Password: ') while ($pass//'').chars < 8;
+  my $key  = prompt-wrapper('>>= What is the key in your email (ctrl+c to cancel)? ') while ($key//'') eq '';
+  my $pass = pass-wrapper('>>= New Password: ') while ($pass//'').chars < 8;
   $response = reset-password($un, $key, $pass);
   if ! $response.success {
     $*ERR.say: "=<< Password reset failed: {$response<message>}";
@@ -151,14 +174,14 @@ multi MAIN('reset-password') is export {
 
 multi MAIN('register') is export {
   my ($em, $un, $pw);
-  $em = prompt('>>= Email: ');
-  $em = prompt('>>= Email: ') while ($em//'').chars < 6
+  $em = prompt-wrapper('>>= Email: ');
+  $em = prompt-wrapper('>>= Email: ') while ($em//'').chars < 6
                                  && 1 == $*ERR.say('=<< Please enter a valid email');
-  $un = prompt('>>= Username: ');
-  $un = prompt('>>= Username: ') while ($un//'').chars < 3
+  $un = prompt-wrapper('>>= Username: ');
+  $un = prompt-wrapper('>>= Username: ') while ($un//'').chars < 3
                                     && 1 == $*ERR.say('=<< Username must be longer than 3 chars');
-  $pw = getpass('>>= Password: ');
-  $pw = getpass('>>= Password: ')  while ($pw//'').chars < 8
+  $pw = pass-wrapper('>>= Password: ');
+  $pw = pass-wrapper('>>= Password: ')  while ($pw//'').chars < 8
                                       && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
 
   my $response = register($em, $un, $pw);
@@ -177,11 +200,11 @@ multi MAIN('register') is export {
 multi MAIN('login') is export {
   my $un = $*USERNAME // '';
   my $pw = $*PASSWORD // '';
-  $un = prompt('>>= Username: ');
-  $un = prompt('>>= Username: ') while ($un//'').chars < 3
+  $un = prompt-wrapper('>>= Username: ');
+  $un = prompt-wrapper('>>= Username: ') while ($un//'').chars < 3
                                     && 1 == $*ERR.say('=<< Username must be longer than 3 chars');
-  $pw = getpass('>>= Password: ');
-  $pw = getpass('>>= Password: ')  while ($pw//'').chars < 8
+  $pw = pass-wrapper('>>= Password: ');
+  $pw = pass-wrapper('>>= Password: ')  while ($pw//'').chars < 8
                                       && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
 
   my $response = login($un, $pw);
@@ -384,7 +407,7 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
     say ">>= Name:    {$response{$ukey}<name>//'<none provided>'}";
     say ">>= Email:   {$response{$ukey}<email>//'<none provided>'}";
     say ">>= Website: {$response{$ukey}<website>//'<none provided>'}";
-    my $should-update = prompt('>>= Would you like to update [y/N]? ').trim;
+    my $should-update = prompt-wrapper('>>= Would you like to update [y/N]? ').trim;
     if $should-update.uc !~~ 'Y'|'YE'|'YES' {
       exit 0;
     }
@@ -394,9 +417,9 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
 
   my %data;
   if ($name//'') eq '' && ($website//'') eq '' && ($email//'') eq '' {
-    %data<name>    = prompt('>>= What would you like your display name to show? ').trim;
-    %data<website> = prompt('>>= What\'s your website? ').trim;
-    %data<email>   = prompt('>>= Public email address? ').trim;
+    %data<name>    = prompt-wrapper('>>= What would you like your display name to show? ').trim;
+    %data<website> = prompt-wrapper('>>= What\'s your website? ').trim;
+    %data<email>   = prompt-wrapper('>>= Public email address? ').trim;
   } else {
     %data<name> = $name if ($name//'') ne '';
     %data<website> = $website if ($website//'') ne '';
@@ -451,9 +474,9 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
   }
   my %data;
   if ($name//'') eq '' && ($website//'') eq '' && ($email//'') eq '' {
-    %data<name>    = prompt('>>= What would you like your display name to show? ').trim;
-    %data<website> = prompt('>>= What\'s your website? ').trim;
-    %data<email>   = prompt('>>= Public email address? ').trim;
+    %data<name>    = prompt-wrapper('>>= What would you like your display name to show? ').trim;
+    %data<website> = prompt-wrapper('>>= What\'s your website? ').trim;
+    %data<email>   = prompt-wrapper('>>= Public email address? ').trim;
   } else {
     %data<name> = $name if ($name//'') ne '';
     %data<website> = $website if ($website//'') ne '';
@@ -504,13 +527,15 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$for
     if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
       my $resp = $unattended
               ?? 'n'
-              !! prompt('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
+              !! prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
       if $resp.lc ~~ any('n'|'no'|'') {
         $*ERR.say: '=<< Ok, exiting';
         exit 255;
       }
     }
   }
+
+  die 'dead';
 
 
   my $response = Fez::Types::api-response.new(:!success);
@@ -736,12 +761,60 @@ multi USAGE is export {
   MAIN(:help);
 }
 
+multi MAIN('refresh', Bool:D :$dry-run = False) is export {
+  my $cwd = upcurse-meta();
+  log(FATAL, 'could not find META6.json') unless $cwd;
+  log(DEBUG, "found META6.json in {$cwd.relative}");
+  
+  log(DEBUG, "scanning files in {$cwd.add('lib').relative}");
+  my @files = get-modules-in-dir($cwd.add('lib'));
+  log(DEBUG, @files.join("\n"));
+
+  log(DEBUG, 'looking for modules/classes in those files');
+  my %rsult = :use({}), :provides({}), :depends({}), :lib-files({});
+  scan-files(@files.sort, sub (Str:D $fn, Str:D $fc) {
+    %rsult<lib-files>{$fn}++;
+    for $fc.lines -> $ln {
+      if my $m = $ln ~~ m:g/^ \s* 'use' \s+ $<use-stmt>=(<-[\s;:]>+ % '::')+ <-[\n]>*?';' / {
+        my $match-str = "{$m[0]<use-stmt>.join.Str}";
+        if $match-str !~~ 'Test'|'NativeCall'|'nqp' {
+          %rsult<use>{$match-str}.push: $fn;
+          log(DEBUG, '[%s]: uses: %s', $fn, $match-str);
+        }
+      }
+      if $m = $ln ~~ m:g/^ \s* ('unit'\s+)? ('module'|'package'|'class') \s+ $<mod-stmt>=(<-[\s:;]>+ % '::')+ <-[\n]>*? (';'|'{') / {
+        if $m.Str ~~ m:g/(^\s* 'unit')|(\s+'is export'(\s+|';'|'{'))/ {
+          my $match-str = $m[0]<mod-stmt>.join.Str.trim;
+          %rsult<provides>{$match-str}.push: $fn;
+          log(DEBUG, '[%s]: provides: %s', $fn, $match-str);
+        } else {
+          log(DEBUG, '[%s]: %s missing unit or is export, skipping', $fn, $m.Str);
+        }
+      }
+    }
+  });
+
+  %rsult<use>.keys.map({ %rsult<depends>{$_}.push(|%rsult<use>{$_}) unless %rsult<provides>{$_}:exists; });
+
+  for %rsult.keys.sort -> $k {
+    log(DEBUG, "%s:\n%s", $k, %rsult{$k}.keys.sort.map({ "  $_ => [{%rsult{$k}{$_}.join(", ")}]" }).join("\n"));
+  }
+
+  my %meta = from-j($cwd.add('META6.json').slurp);
+  %meta<depends> = %rsult<depends>.keys.sort;
+  %meta<provides> = %rsult<provides>.keys.sort.map({$_ => %rsult<provides>{$_}.first}).hash;
+
+  log(DEBUG, to-j(%meta));
+
+  printf "%s\n", to-j(%meta) if $dry-run;
+}
+
 multi MAIN('init', Str $module is copy = '') is export {
   if '.'.IO.dir.elems {
     log(FATAL, "directory not empty, will not proceed\n");
   }
 
-  $module       = prompt('>>= Module name? ') while ($module//'').chars == 0;
+  $module          = prompt-wrapper('>>= Module name? ') while ($module//'').chars == 0;
   my @module-parts = $module.split('::', :skip-empty);
   my $module-file  = @module-parts.pop ~ ".rakumod";
   my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
@@ -767,7 +840,7 @@ multi MAIN('init', Str $module is copy = '') is export {
   log(DEBUG, 'creating meta file');
   'META6.json'.IO.spurt: to-j({
     "name" => "$dist-name",
-    "ver" =>  "0.0.1",
+    "version" =>  "0.0.1",
     "auth" => "$auth",
 
     "description" => "A brand new and very nice module",
@@ -784,9 +857,6 @@ multi MAIN('init', Str $module is copy = '') is export {
 
   log(DEBUG, 'creating empty unit module file');
   $module-path.IO.spurt: "unit module $module;";
-
-  log(DEBUG, 'creating empty lock file');
-  'fez.lock'.IO.spurt: '';
 
   log(DEBUG, 'making test directory');
   mkdir 't';

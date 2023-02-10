@@ -3,12 +3,18 @@ unit module Fez::Logr;
 enum LOGLEVEL is export <DEBUG INFO WARN ERROR FATAL MSG>;
 
 state $LOGR     = Supplier.new;
-state $LOGLEVEL = ERROR;
+state $LOGLEVEL = INFO;
 
 my $supply = $LOGR.Supply;
 
 sub log(LOGLEVEL:D $prefix, Str:D $msg, *@args) is export {
+  return if $LOGLEVEL !~~ DEBUG && $prefix ~~ DEBUG;
   $LOGR.emit({:$prefix, :$msg, :@args});
+}
+
+sub set-loglevel(LOGLEVEL:D $ll) is export {
+  $LOGR.emit({:prefix(INFO), :msg('setting log level: %s'), :args($ll.gist)});
+  $LOGLEVEL = $ll;
 }
 
 sub s(LOGLEVEL:D $prefix, Str:D $msg, *@args) {
