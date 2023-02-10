@@ -1,9 +1,9 @@
 unit module Fez::Util::FS;
 
-sub get-modules-in-dir(IO() $dir --> List) is export {
+sub get-files-in-dir(IO() $dir, Callable $chk --> List) is export {
   $dir.dir.map(-> $fd { $fd.f
-    ?? ($fd.basename ~~ m/['.rakumod'|'.pm6']$/ ?? $fd.relative !! Failure)
-    !! ($fd.d ?? |get-modules-in-dir($fd) !! Failure)
+    ?? ($chk.($fd) ?? $fd.relative !! Failure)
+    !! ($fd.d ?? |get-files-in-dir($fd, $chk) !! Failure)
   }).grep(*.defined).List;
 }
 

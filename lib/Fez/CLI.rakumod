@@ -34,10 +34,16 @@ sub prompt-wrapper(Str:D $prompt --> Str) {
   prompt($prompt);
 }
 
-multi MAIN(Str $_ where * ~~ 'v'|'version') is export {
+multi MAIN('v') is export is pure {
+  MAIN('version');
+}
+multi MAIN('version') is export is pure {
   say '>>= fez version: ' ~ $?DISTRIBUTION.meta<version>;
 }
 
+multi MAIN('o', 'c', Str $org-name, Str $org-email) is export {
+  MAIN('org', 'create', $org-name, $org-email);
+}
 multi MAIN('org', 'create', Str $org-name, Str $org-email) is export {
   my $response = org-create(config-value('key'), $org-name, $org-email);
   if $response.success {
@@ -59,6 +65,9 @@ multi MAIN('org', 'create', Str $org-name, Str $org-email) is export {
   }
 }
 
+multi MAIN('o', 'l', Str $org-name) is export {
+  MAIN('org', 'leave', $org-name);
+}
 multi MAIN('org', 'leave', Str $org-name) is export {
   my $response = org-leave(config-value('key'), $org-name);
   if $response.success {
@@ -80,6 +89,9 @@ multi MAIN('org', 'leave', Str $org-name) is export {
   }
 }
 
+multi MAIN('o', 'a', Str $org-name) is export {
+  MAIN('org', 'accept', $org-name);
+}
 multi MAIN('org', 'accept', Str $org-name) is export {
   my $response = org-join(config-value('key'), $org-name);
   if $response.success {
@@ -101,6 +113,9 @@ multi MAIN('org', 'accept', Str $org-name) is export {
   }
 }
 
+multi MAIN('o', 'p') is export {
+  MAIN('org', 'pending');
+}
 multi MAIN('org', 'pending') is export {
   my $response = org-pending(config-value('key'));
   if $response.success {
@@ -115,6 +130,9 @@ multi MAIN('org', 'pending') is export {
   }
 }
 
+multi MAIN('o', 'm', Str $org-name) is export {
+  MAIN('org', 'members', $org-name);
+}
 multi MAIN('org', 'members', Str $org-name) is export {
   my $response = org-members(config-value('key'), $org-name);
   if $response.success {
@@ -129,6 +147,9 @@ multi MAIN('org', 'members', Str $org-name) is export {
   }
 }
 
+multi MAIN('o', 'i', Str $org-name, Str $role, Str $user) is export {
+  MAIN('org', 'invite', $org-name, $role, $user);
+}
 multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) is export {
   my $response = org-invite(config-value('key'), $org-name, $role, $user);
   if $response.success {
@@ -139,7 +160,10 @@ multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) is export {
   }
 }
 
-multi MAIN('org', 'mod', Str $org-name, Str $role, Str $user) is export {
+multi MAIN('o', 'mod', Str $org-name, Str $role, Str $user) is export {
+  MAIN('org', 'modify', $org-name, $role, $user);
+}
+multi MAIN('org', 'modify', Str $org-name, Str $role, Str $user) is export {
   my $response = org-mod(config-value('key'), $org-name, $role, $user);
   if $response.success {
     say '>>= User\'s role was modified';
@@ -149,6 +173,9 @@ multi MAIN('org', 'mod', Str $org-name, Str $role, Str $user) is export {
   }
 }
 
+multi MAIN('reset') is export {
+  MAIN('reset-password');
+}
 multi MAIN('reset-password') is export {
   my $un = prompt-wrapper('>>= Username: ') while ($un//'').chars < 3;
   my $response = init-reset-password($un);
@@ -172,6 +199,9 @@ multi MAIN('reset-password') is export {
   say ">>= Password reset successful, you now have a new key and can upload dists";
 }
 
+multi MAIN('reg') is export {
+  MAIN('register');
+}
 multi MAIN('register') is export {
   my ($em, $un, $pw);
   $em = prompt-wrapper('>>= Email: ');
@@ -197,6 +227,9 @@ multi MAIN('register') is export {
   MAIN('meta');
 }
 
+multi MAIN('l') is export {
+  MAIN('login');
+}
 multi MAIN('login') is export {
   my $un = $*USERNAME // '';
   my $pw = $*PASSWORD // '';
@@ -394,6 +427,9 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
   True;
 }
 
+multi MAIN('m', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+  MAIN('meta', :$name, :$website, :$email);
+}
 multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
@@ -446,6 +482,9 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
   $*ERR.say: '=<< Your meta info has been updated';
 }
 
+multi MAIN('o', 'l') is export {
+  MAIN('org', 'list');
+}
 multi MAIN('org', 'list') is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
@@ -466,6 +505,9 @@ multi MAIN('org', 'list') is export {
   }
 }
 
+multi MAIN('o', 'meta', Str $org-name, Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+  MAIN('o', 'meta', $org-name, :$name, :$website, :$email);
+}
 multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
@@ -508,7 +550,10 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
   $*ERR.say: "=<< $org-name\'s meta info has been updated";
 }
 
-multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$force = False, Bool :$unattended = False) is export {
+multi MAIN('up', Str :$file = '', Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
+  MAIN('upload', $file, :$save-autobundle, :$force);
+}
+multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$force = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
     $*ERR.say: '=<< You must login to upload';
@@ -525,18 +570,13 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$for
   };
   if !$force {
     if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
-      my $resp = $unattended
-              ?? 'n'
-              !! prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
+      my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
       if $resp.lc ~~ any('n'|'no'|'') {
         $*ERR.say: '=<< Ok, exiting';
         exit 255;
       }
     }
   }
-
-  die 'dead';
-
 
   my $response = Fez::Types::api-response.new(:!success);
   while ! ($response.success//False) {
@@ -573,6 +613,10 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$for
   say '>>= Hey! You did it! Your dist will be indexed shortly.';
 }
 
+
+multi MAIN('ls', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
+  MAIN('list', $name, $url);
+}
 multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
   MAIN('login') unless config-value('key');
   my $show-login = False;
@@ -598,6 +642,9 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
   $*ERR.say("=<< A login may be required to see updated results") if $show-login;
 }
 
+multi MAIN('rm', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
+  MAIN('remove', $dist, $url);
+}
 multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
   my $response = org-list(config-value('key'));
   if ! $response.success {
@@ -634,6 +681,9 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
   exit -1;
 }
 
+multi MAIN('p', Bool :a($all) = False) is export {
+  MAIN('plugin', :$all);
+}
 multi MAIN('plugin', Bool :a($all) = False) is export {
   my @base = qw<bundlers requestors>;
   my $user-config = user-config;
@@ -679,6 +729,7 @@ multi MAIN('plugin', Bool :h(:$help)?) is export {
   END
 }
 
+multi MAIN('o', 'h') { MAIN('org', :h); }
 multi MAIN('org', 'help') { MAIN('org', :h); }
 multi MAIN('org', Bool :h(:$help)?) is export {
   note qq:to/END/
@@ -710,6 +761,7 @@ multi MAIN('org', Bool :h(:$help)?) is export {
   END
 }
 
+multi MAIN('h') { MAIN(:h); }
 multi MAIN('help') { MAIN(:h); }
 multi MAIN(Bool :h(:$help)?) is export {
   note qq:to/END/
@@ -720,6 +772,10 @@ multi MAIN(Bool :h(:$help)?) is export {
       fez command [args]
 
     COMMANDS
+
+      INFORMATION
+
+        v|version             prints out the version of fez you're using
 
       DIST MANAGEMENT
 
@@ -758,16 +814,23 @@ multi MAIN(Bool :h(:$help)?) is export {
 }
 
 multi USAGE is export {
-  MAIN(:help);
+  @*ARGS.grep(* ~~ 'o'|'org')
+    ?? MAIN('org', :help)
+    !! MAIN(:help);
 }
 
-multi MAIN('refresh', Bool:D :$dry-run = False) is export {
+multi MAIN('ref', Bool:D :d($dry-run) = False) is export {
+  MAIN('refresh', :d($dry-run));
+}
+multi MAIN('refresh', Bool:D :d($dry-run) = False) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
   log(DEBUG, "found META6.json in {$cwd.relative}");
   
   log(DEBUG, "scanning files in {$cwd.add('lib').relative}");
-  my @files = get-modules-in-dir($cwd.add('lib'));
+  my @files = get-files-in-dir($cwd.add('lib'), -> $f { 
+    $f.basename ~~ m/'.'['pm6'|'rakumod']$/;
+  });
   log(DEBUG, @files.join("\n"));
 
   log(DEBUG, 'looking for modules/classes in those files');
@@ -799,16 +862,24 @@ multi MAIN('refresh', Bool:D :$dry-run = False) is export {
   for %rsult.keys.sort -> $k {
     log(DEBUG, "%s:\n%s", $k, %rsult{$k}.keys.sort.map({ "  $_ => [{%rsult{$k}{$_}.join(", ")}]" }).join("\n"));
   }
+  
+  my @rsrcs = get-files-in-dir($cwd.add('resources'), -> $f { True })
+    .map({ S/^ 'resources' [\/|\\] // given $_; });
 
   my %meta = from-j($cwd.add('META6.json').slurp);
   %meta<depends> = %rsult<depends>.keys.sort;
   %meta<provides> = %rsult<provides>.keys.sort.map({$_ => %rsult<provides>{$_}.first}).hash;
+  %meta<resources> = @rsrcs.sort;
 
   log(DEBUG, to-j(%meta));
 
   printf "%s\n", to-j(%meta) if $dry-run;
+  $cwd.add('META6.json').spurt(to-j(%meta)) unless $dry-run;
 }
 
+multi MAIN('in', Str $module is copy = '') is export {
+  MAIN('init', $module);
+}
 multi MAIN('init', Str $module is copy = '') is export {
   if '.'.IO.dir.elems {
     log(FATAL, "directory not empty, will not proceed\n");
@@ -870,6 +941,9 @@ multi MAIN('init', Str $module is copy = '') is export {
   EOF
 }
 
+multi MAIN('dep', Str:D $dist, Bool :$build = False) is export {
+  MAIN('depends', $dist, :$build);
+}
 multi MAIN('depends', Str:D $dist, Bool :$build = False) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
@@ -889,7 +963,10 @@ multi MAIN('depends', Str:D $dist, Bool :$build = False) is export {
   }
 }
 
-multi MAIN(Str:D $ where * ~~ 'command'|'cmd') is export {
+multi MAIN('cmd') is export {
+  MAIN('command');
+}
+multi MAIN('command') is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
   log(DEBUG, "found META6.json in {$cwd.relative}");
@@ -909,7 +986,10 @@ multi MAIN(Str:D $ where * ~~ 'command'|'cmd') is export {
   }
 }
 
-multi MAIN(Str:D $ where * ~~ 'r'|'run', Str:D $command, :$timeout is copy) is export {
+multi MAIN('r', Str:D $command, :$timeout is copy) is export {
+  MAIN('run', $command, :$timeout);
+}
+multi MAIN('run', Str:D $command, :$timeout is copy) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
 
@@ -948,6 +1028,9 @@ multi MAIN(Str:D $ where * ~~ 'r'|'run', Str:D $command, :$timeout is copy) is e
   };
 }
 
+multi MAIN('res', Str:D $path) is export {
+  MAIN('resource', $path);
+}
 multi MAIN('resource', Str:D $path) is export {
   if $path ~~ m{'#'|'<'|'>'|'$'|'+'|'%'|'!'|'`'|'&'|'*'|'\''|'|'|'{'|'}'|'?'|'"'|'='|':'|' '|'@'} {
     log(FATAL, '%s contains a poor choice of characters, please remove any #<>$+%%>!`&*\'|{}?"=: @', $path);
