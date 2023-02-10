@@ -1,4 +1,4 @@
-unit module Fez::CLI::Usr;
+unit module Fez::CLI;
 
 use Fez::Logr;
 use Fez::Util::Pass;
@@ -730,6 +730,10 @@ multi MAIN(Bool :h(:$help)?) is export {
       ignore it and use the default curl/wget/git tools for great success.
 
   END
+}
+
+multi USAGE is export {
+  MAIN(:help);
 }
 
 multi MAIN('init', Str $module is copy = '') is export {
