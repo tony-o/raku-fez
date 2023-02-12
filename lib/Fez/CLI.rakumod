@@ -863,8 +863,10 @@ multi MAIN('refresh', Bool:D :d($dry-run) = False) is export {
     log(DEBUG, "%s:\n%s", $k, %rsult{$k}.keys.sort.map({ "  $_ => [{%rsult{$k}{$_}.join(", ")}]" }).join("\n"));
   }
   
-  my @rsrcs = get-files-in-dir($cwd.add('resources'), -> $f { True })
-    .map({ S/^ 'resources' [\/|\\] // given $_; });
+  my @rsrcs = $cwd.add('resources').d
+    ?? get-files-in-dir($cwd.add('resources'), -> $f { True })
+         .map({ S/^ 'resources' [\/|\\] // given $_; })
+    !! ();
 
   my %meta = from-j($cwd.add('META6.json').slurp);
   %meta<depends> = %rsult<depends>.keys.sort;
