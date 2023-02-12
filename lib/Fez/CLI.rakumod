@@ -1031,8 +1031,9 @@ multi MAIN('run', Str:D $command, :$timeout is copy) is export {
 multi MAIN('res', Str:D $path) is export {
   MAIN('resource', $path);
 }
-multi MAIN('resource', Str:D $path) is export {
-  if $path ~~ m{'#'|'<'|'>'|'$'|'+'|'%'|'!'|'`'|'&'|'*'|'\''|'|'|'{'|'}'|'?'|'"'|'='|':'|' '|'@'} {
+multi MAIN('resource', Str:D $path is copy) is export {
+  $path.=trim;
+  if $path ~~ m{'#'|'<'|'>'|'$'|'+'|'%'|'!'|'`'|'&'|'*'|'\''|'|'|'{'|'}'|'?'|'"'|'='|':'|' '|'@'|"\r"|"\n"} || $path.encode.decode('ascii', :replacement<->) ne $path {
     log(FATAL, '%s contains a poor choice of characters, please remove any #<>$+%%>!`&*\'|{}?"=: @', $path);
   }
 
