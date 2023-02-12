@@ -881,19 +881,19 @@ multi MAIN('in', Str $module is copy = '') is export {
   MAIN('init', $module);
 }
 multi MAIN('init', Str $module is copy = '') is export {
-  if '.'.IO.dir.elems {
-    log(FATAL, "directory not empty, will not proceed\n");
-  }
-
   $module          = prompt-wrapper('>>= Module name? ') while ($module//'').chars == 0;
   my @module-parts = $module.split('::', :skip-empty);
   my $module-file  = @module-parts.pop ~ ".rakumod";
   my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
-  my $dist-name = S:g/'::'/-/ given $module;
+  my $dist-name = S:g/':'/\-/ given $module;
 
   log(DEBUG, "module-parts:%s\nmodule-file:%s\nmodule-path:%s\n  dist-name:%s", @module-parts.join(', '), $module-file, $module-path, $dist-name);
 
-  my $root := 'lib'.IO;
+  log(FATAL, "'%s' exists, will not proceed\n", $dist-name) if '.'.IO.add($dist-name).e;
+
+  mkdir $dist-name;
+
+  my $root := '.'.IO.add($dist-name, 'lib').IO;
   mkdir $root.absolute;
   while @module-parts.elems {
     $root := $root.add(@module-parts.shift);
@@ -909,7 +909,7 @@ multi MAIN('init', Str $module is copy = '') is export {
   }
 
   log(DEBUG, 'creating meta file');
-  'META6.json'.IO.spurt: to-j({
+  '.'.IO.add($dist-name, 'META6.json').IO.spurt: to-j({
     "name" => "$dist-name",
     "version" =>  "0.0.1",
     "auth" => "$auth",
@@ -927,12 +927,12 @@ multi MAIN('init', Str $module is copy = '') is export {
   });
 
   log(DEBUG, 'creating empty unit module file');
-  $module-path.IO.spurt: "unit module $module;";
+  '.'.IO.add($dist-name, $module-path).IO.spurt: "unit module $module;";
 
   log(DEBUG, 'making test directory');
-  mkdir 't';
+  mkdir '.'.IO.add($dist-name, 't');
   
-  't'.IO.add('00-use.t').spurt: qq:to/EOF/;
+  '.'.IO.add($dist-name, 't', '00-use.t').spurt: qq:to/EOF/;
     use Test;
 
     plan 1;
