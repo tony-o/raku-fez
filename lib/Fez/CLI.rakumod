@@ -934,12 +934,12 @@ multi MAIN('init', Str $module is copy = '') is export {
   log(DEBUG, 'making test directory');
   mkdir '.'.IO.add($dist-name, 't');
   
-  '.'.IO.add($dist-name, 't', '00-use.t').spurt: qq:to/EOF/;
-    use Test;
+  '.'.IO.add($dist-name, 't', '00-use.rakutest').spurt: qq:to/EOF/;
+  use Test;
 
-    plan 1;
+  plan 1;
 
-    use-ok "$module";
+  use-ok "$module";
   EOF
 }
 
