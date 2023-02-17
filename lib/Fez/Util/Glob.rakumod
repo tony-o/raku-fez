@@ -1,4 +1,4 @@
-\unit module Fez::Util::Glob;
+unit module Fez::Util::Glob;
 
 class globbalizer {
   has Regex @.patterns;
