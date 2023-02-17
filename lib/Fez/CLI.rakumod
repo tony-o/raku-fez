@@ -550,10 +550,10 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
   $*ERR.say: "=<< $org-name\'s meta info has been updated";
 }
 
-multi MAIN('up', Str :$file = '', Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
+multi MAIN('up', Str :i($file) = '', Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
   MAIN('upload', $file, :$save-autobundle, :$force);
 }
-multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$force = False) is export {
+multi MAIN('upload', Str :i($file) = '', Bool :d($dry-run) = False,  Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
     $*ERR.say: '=<< You must login to upload';
@@ -576,6 +576,11 @@ multi MAIN('upload', Str :$file = '', Bool :$save-autobundle = False, Bool :$for
         exit 255;
       }
     }
+  }
+
+  if $dry-run {
+    log(INFO, 'Exiting now because --dry-run (or -d) was supplied');
+    exit 0;
   }
 
   my $response = Fez::Types::api-response.new(:!success);
