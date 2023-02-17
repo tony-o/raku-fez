@@ -1,37 +1,40 @@
 {
-  "name":          "fez",
-  "auth":          "zef:tony-o",
-  "version":       "40",
-  "api":           "0",
-  "description":   "one way to upload your dists to the masses.",
-  "perl":          "6.c",
-  "license":       "Artistic-2.0",
-  "meta-version":  "0",
-  "build-depends": [],
-  "depends":       ["NativeCall"],
+  "api": "0",
+  "auth": "zef:tony-o",
+  "build-depends": [
+  ],
+  "depends": [
+  ],
+  "description": "one way to upload your dists to the masses.",
+  "license": "Artistic-2.0",
+  "meta-version": "0",
+  "name": "fez",
+  "perl": "6.c",
   "provides": {
-    "Fez": "lib/Fez.rakumod",
     "Fez::API": "lib/Fez/API.rakumod",
+    "Fez::Bundle": "lib/Fez/Bundle.rakumod",
+    "Fez::CLI": "lib/Fez/CLI.rakumod",
+    "Fez::Logr": "lib/Fez/Logr.rakumod",
+    "Fez::Types": "lib/Fez/Types.rakumod",
     "Fez::Util::Config": "lib/Fez/Util/Config.rakumod",
     "Fez::Util::Curl": "lib/Fez/Util/Curl.rakumod",
     "Fez::Util::Date": "lib/Fez/Util/Date.rakumod",
+    "Fez::Util::FS": "lib/Fez/Util/FS.rakumod",
     "Fez::Util::Glob": "lib/Fez/Util/Glob.rakumod",
     "Fez::Util::Json": "lib/Fez/Util/Json.rakumod",
+    "Fez::Util::META6": "lib/Fez/Util/META6.rakumod",
     "Fez::Util::Pass": "lib/Fez/Util/Pass.rakumod",
     "Fez::Util::Pax": "lib/Fez/Util/Pax.rakumod",
-    "Fez::Util::FS": "lib/Fez/Util/FS.rakumod",
     "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
     "Fez::Util::Uri": "lib/Fez/Util/Uri.rakumod",
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
-    "Fez::Util::META6": "lib/Fez/Util/META6.rakumod",
-    "Fez::Web": "lib/Fez/Web.rakumod",
-    "Fez::CLI": "lib/Fez/CLI.rakumod",
-    "Fez::Logr": "lib/Fez/Logr.rakumod",
-    "Fez::Bundle": "lib/Fez/Bundle.rakumod",
-    "Fez::Types": "lib/Fez/Types.rakumod"
+    "Fez::Web": "lib/Fez/Web.rakumod"
   },
-  "source-url": "https://github.com/tony-o/raku-fez.git",
   "resources": [
-    "config.json"
-  ]
+    "config.json",
+    "usage/_",
+    "usage/org"
+  ],
+  "source-url": "https://github.com/tony-o/raku-fez.git",
+  "version": "40"
 }

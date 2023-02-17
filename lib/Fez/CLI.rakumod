@@ -737,91 +737,23 @@ multi MAIN('plugin', Bool :h(:$help)?) is export {
 multi MAIN('o', 'h') { MAIN('org', :h); }
 multi MAIN('org', 'help') { MAIN('org', :h); }
 multi MAIN('org', Bool :h(:$help)?) is export {
-  note qq:to/END/
-    Fez - Raku / Perl6 package utility
-
-    USAGE
-
-      fez org command [args]
-
-    COMMANDS
-
-      create                creates an org in your honor
-      list                  lists your current org membership
-      members               lists members of \<org-name\>
-      pending               shows your current org invites
-      accept                accepts an invite listed in pending
-      leave                 drops your membership with \<org-name\> *1
-      invite                invites a user to join your org, must be an admin
-      mod                   use this to modify a user's role, must be an admin
-      meta                  update your org's meta
-
-      
-    NOTES\*
-
-      1. If you're the last admin of the group you must first modify your role to
-      member and then leave the group. The org is then considered abandoned,
-      there is no way to use fez to recover the org after this action.
-
-  END
+  say %?RESOURCES<usage/org>.slurp;
 }
 
 multi MAIN('h') { MAIN(:h); }
 multi MAIN('help') { MAIN(:h); }
 multi MAIN(Bool :h(:$help)?) is export {
-  note qq:to/END/
-    Fez - Raku / Perl6 package utility
-
-    USAGE
-
-      fez command [args]
-
-    COMMANDS
-
-      INFORMATION
-
-        v|version             prints out the version of fez you're using
-
-      DIST MANAGEMENT
-
-        init                  initializes a new module
-        resource              creates a new resource file at the given path, creat-
-                              ing the path if necessary
-        depends               add a build or runtime dependency to the meta
-        cmd                   list commands this module provides
-        run                   runs a command listed in `cmd`
-        refresh               attempts to update the META6 from the file system
-                              this does NOT prompt before overwriting
-
-      RELEASE MANAGEMENT
-
-        register              registers you up for a new account
-        login                 logs you in and saves your key info
-        upload                creates a distribution tarball and uploads
-        meta                  update your public meta info (website, email, name)
-        reset-password        initiates a password reset using the email
-                              that you registered with
-        list                  lists the dists for the currently logged in user
-        remove                removes a dist from the ecosystem (requires fully
-                              qualified dist name, copy from `list` if in doubt)
-        org                   org actions, use `fez org help` for more info
-
-    ENV OPTIONS
-
-      FEZ_CONFIG            if you need to modify your config, set this env var
-
-    CONFIGURATION (using: { user-config-path })
-
-      Copy this to a cool location and write your own requestors/bundlers or
-      ignore it and use the default curl/wget/git tools for great success.
-
-  END
+  say S:g/'$user-config-path'/{user-config-path}/ given %?RESOURCES<usage/_>.slurp;
 }
 
 multi USAGE is export {
-  @*ARGS.grep(* ~~ 'o'|'org')
-    ?? MAIN('org', :help)
-    !! MAIN(:help);
+  my $key = @*ARGS.grep({!$_.starts-with('-')}).first;
+  my $usage = $?DISTRIBUTION.meta<resources>.grep({$_.starts-with: "usage/$key"}).first;
+  if $usage {
+    say %?RESOURCES{$usage}.slurp;
+  } else {
+    MAIN(:help);
+  }
 }
 
 multi MAIN('ref', Bool:D :d($dry-run) = False) is export {

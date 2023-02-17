@@ -1,0 +1,44 @@
+Fez - Raku / Perl6 package utility
+
+USAGE
+
+  fez command [args]
+
+COMMANDS
+
+  INFORMATION
+
+    v|version             prints out the version of fez you're using
+
+  DIST MANAGEMENT
+
+    init                  initializes a new module
+    resource              creates a new resource file at the given path, creat-
+                          ing the path if necessary
+    depends               add a build or runtime dependency to the meta
+    cmd                   list commands this module provides
+    run                   runs a command listed in `cmd`
+    refresh               attempts to update the META6 from the file system
+                          this does NOT prompt before overwriting
+
+  RELEASE MANAGEMENT
+
+    register              registers you up for a new account
+    login                 logs you in and saves your key info
+    upload                creates a distribution tarball and uploads
+    meta                  update your public meta info (website, email, name)
+    reset-password        initiates a password reset using the email
+                          that you registered with
+    list                  lists the dists for the currently logged in user
+    remove                removes a dist from the ecosystem (requires fully
+                          qualified dist name, copy from `list` if in doubt)
+    org                   org actions, use `fez org help` for more info
+
+ENV OPTIONS
+
+  FEZ_CONFIG            if you need to modify your config, set this env var
+
+CONFIGURATION (using: $user-config-path)
+
+  Copy this to a cool location and write your own requestors/bundlers or
+  ignore it and use the default curl/wget/git tools for great success.
