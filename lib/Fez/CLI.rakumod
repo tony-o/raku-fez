@@ -550,7 +550,7 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
   $*ERR.say: "=<< $org-name\'s meta info has been updated";
 }
 
-multi MAIN('up', Str :i($file) = '', Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
+multi MAIN('up', Str :i($file) = '', Bool :d($dry-run) = False, Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
   MAIN('upload', $file, :$save-autobundle, :$force);
 }
 multi MAIN('upload', Str :i($file) = '', Bool :d($dry-run) = False,  Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
