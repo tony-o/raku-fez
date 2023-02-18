@@ -1,0 +1,8 @@
+USAGE
+
+  fez l
+
+  fez login
+
+Logs in and saves a key to your configuration file for use with other
+commands.

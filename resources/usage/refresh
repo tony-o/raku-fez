@@ -1,0 +1,9 @@
+USAGE
+
+  fez ref [-d]
+
+  fez refresh [--dry-run=False]
+
+Attempts to refresh your meta file's resources, provides, and requires.
+It's encouraged that you do a dry run and manually inspect the meta
+prior to committing to this command.

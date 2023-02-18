@@ -1,0 +1,12 @@
+USAGE
+
+  fez res <path>
+
+  fez resource <path>
+
+Attempts to create a resource in the current dist and update the meta. Do NOT
+include 'resources/' in the path, eg
+
+fez resource usage/default
+
+Will create the file: `resources/usage/default`.

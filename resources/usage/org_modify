@@ -1,0 +1,8 @@
+USAGE
+
+  fez o m <org name> <role> <user>
+
+  fez org modify <org name> <role> <user>
+
+Modifies a user role in the org.  See `fez org invite` for more information
+about roles.

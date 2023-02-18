@@ -1,0 +1,24 @@
+DEPRECATED:
+
+Please use `fez review`
+
+USAGE
+
+  fez checkbuild --file?=<filename> --auth-mismatch-error? --development?
+
+FLAGS
+
+  OPTIONAL
+
+  -f|--file                        path to your manually created .tar.gz
+                                   if not set then this command analyzes the
+                                   current directory
+
+  -a|--auth-mismatch-error=False   whether to error out when the auth is not
+                                   in the form `zef:<user>` or, when logged in,
+                                   not the user you're logged in as.
+
+  -d|--development=False           will cause an error if `production` is present
+                                   in the META6.json and not set to `true`.
+
+Checks your dist for errors.

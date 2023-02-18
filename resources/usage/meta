@@ -1,0 +1,21 @@
+USAGE
+
+  fez m [-nwe]
+
+  fez meta [--name=Str] [--website=Str] [--email=Str]
+
+FLAGS
+
+  OPTIONAL
+
+  -n|--name           the name you'd like people to see publicly.
+                      this does not affect your auth name and is available
+                      so raku dist sites can put a friendly name to your
+                      modules
+
+  -w|--website        your the website you'd like people to know about
+
+  -e|--email          an email address that people can reach you at
+
+Displays the user's current meta data. If run without `--unattended` then
+the user will be asked if they'd like to update their meta data.

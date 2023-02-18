@@ -1,0 +1,11 @@
+USAGE
+
+  fez o c <org name> <org email>
+
+  fez org create <org name> <org email>
+
+Will create an org with <org name> and <org email>.  This will create an auth
+`zef:<org name>`.  If there is already a user or another org by that name then
+you will receive an error.
+
+You will become an admin of that org immediately.

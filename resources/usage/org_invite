@@ -1,0 +1,10 @@
+USAGE
+
+  fez o i <org name> <role> <user>
+
+  fez org invite <org name> <role> <user>
+
+Invites an existing user to the org.  You must be an admin of <org name> to
+do this. Role can be either `member` or `admin`. Giving a user admin access
+will give them full control of the org, only grant this role to users you
+trust fully.

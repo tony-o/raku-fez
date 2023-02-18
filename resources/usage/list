@@ -1,0 +1,8 @@
+USAGE
+
+  fez ls [<name>]
+
+  fez list [<name>]
+
+Lists the current user's dists as well as any in the groups the user
+belongs to optionally filtered by <name>.

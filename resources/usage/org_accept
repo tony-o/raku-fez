@@ -1,0 +1,8 @@
+USAGE
+
+  fez o a <org name>
+
+  fez org accept <org name>
+
+Accepts an invitation to an org. You can see your pending invitations using
+`fez org pending`.

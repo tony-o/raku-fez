@@ -10,6 +10,7 @@ use Fez::Util::Date;
 use Fez::Util::Uri;
 use Fez::Util::META6;
 use Fez::Util::FS;
+use Fez::Util::Glob;
 use Fez::Web;
 use Fez::Bundle;
 use Fez::API;
@@ -38,7 +39,7 @@ multi MAIN('v') is export is pure {
   MAIN('version');
 }
 multi MAIN('version') is export is pure {
-  say '>>= fez version: ' ~ $?DISTRIBUTION.meta<version>;
+  log(MSG, 'fez version: %s', $?DISTRIBUTION.meta<version>);
 }
 
 multi MAIN('o', 'c', Str $org-name, Str $org-email) is export {
@@ -47,21 +48,18 @@ multi MAIN('o', 'c', Str $org-name, Str $org-email) is export {
 multi MAIN('org', 'create', Str $org-name, Str $org-email) is export {
   my $response = org-create(config-value('key'), $org-name, $org-email);
   if $response.success {
-    say ">>= You're the proud new admin of $org-name";
+    log(MSG, 'You\'re the proud new admin of %s', $org-name);
     $response = org-list(config-value('key'));
     if ! $response.success {
-      $*ERR.say: "=<< Failed to retrieve user orgs";
-      exit 255;
+      log(FATAL, 'Failed to retrieve user orgs');
     }
     if $response.success {
       write-to-user-config({ groups => $response.groups });
     } else {
-      $*ERR.say: "=<< Failed to update config";
-      exit 1;
+      log(FATAL, 'Failed to update config');
     }
   } else {
-    $*ERR.say: "=<< {$response.message}";
-    exit 255;
+    log(FATAL, $response.message);
   }
 }
 
@@ -71,21 +69,18 @@ multi MAIN('o', 'l', Str $org-name) is export {
 multi MAIN('org', 'leave', Str $org-name) is export {
   my $response = org-leave(config-value('key'), $org-name);
   if $response.success {
-    say ">>= You're no longer in $org-name";
+    log(MSG, 'You\'re no longer in %s', $org-name);
     $response = org-list(config-value('key'));
     if ! $response.success {
-      $*ERR.say: "=<< Failed to retrieve user orgs";
-      exit 255;
+      log(FATAL, 'Failed to retrieve user orgs');
     }
     if $response.success {
       write-to-user-config({ groups => $response.groups });
     } else {
-      $*ERR.say: "=<< Failed to update config";
-      exit 1;
+      log(FATAL, 'Failed to update config');
     }
   } else {
-    $*ERR.say: "=<< {$response.message}";
-    exit 255;
+    log(FATAL, $response.message);
   }
 }
 
@@ -95,21 +90,18 @@ multi MAIN('o', 'a', Str $org-name) is export {
 multi MAIN('org', 'accept', Str $org-name) is export {
   my $response = org-join(config-value('key'), $org-name);
   if $response.success {
-    say ">>= You're now a very nice member of $org-name";
+    log(MSG, 'You\'re now a very nice member of %s', $org-name);
     $response = org-list(config-value('key'));
     if ! $response.success {
-      $*ERR.say: "=<< Failed to retrieve user orgs";
-      exit 255;
+      log(FATAL, 'Failed to retrieve user orgs');
     }
     if $response.success {
       write-to-user-config({ groups => $response.groups });
     } else {
-      $*ERR.say: "=<< Failed to update config";
-      exit 1;
+      log(FATAL, 'Failed to update config');
     }
   } else {
-    $*ERR.say: "=<< {$response.message}";
-    exit 255;
+    log(FATAL, $response.message);
   }
 }
 
@@ -119,14 +111,13 @@ multi MAIN('o', 'p') is export {
 multi MAIN('org', 'pending') is export {
   my $response = org-pending(config-value('key'));
   if $response.success {
-    say '>>= No pending invites found' unless $response.groups;
-    say '>>= R Org' if $response.groups;
+    log(MSG, 'No pending invites found') unless $response.groups;
+    log(MSG, 'R Org') if $response.groups;
     for $response.groups.sort({ $^a<role> eq $^b<role> ?? $^a<group> cmp $^b<group> !! $^a<role> cmp $^b<role> }) -> %g {
-      say ">>= {%g<role>.substr(0,1)} {%g<group>}";
+      log(MSG, '%s %s', %g<role>.substr(0,1), %g<group>);
     }
   } else {
-    $*ERR.say: "=<< Failed. {$response.message}";
-    exit 255;
+    log(FATAL, $response.message);
   }
 }
 
@@ -136,14 +127,13 @@ multi MAIN('o', 'm', Str $org-name) is export {
 multi MAIN('org', 'members', Str $org-name) is export {
   my $response = org-members(config-value('key'), $org-name);
   if $response.success {
-    say '>>= No members' unless $response.members; # Weird edge case
-    say '>>= R Org Name' if $response.members;
+    log(MSG, 'No members') unless $response.members; # Weird edge case
+    log(MSG, 'R Org Name') if $response.members;
     for $response.members.sort({ $^a<role> eq $^b<role> ?? $^a<username> cmp $^b<username> !! $^a<role> cmp $^b<role> }) -> %m {
-      say ">>= {%m<role>.substr(0,1)} {%m<username>}"
+      log(MSG, '%s %s', %m<role>.substr(0,1), %m<username>);
     }
   } else {
-    $*ERR.say: "=<< Failed. {$response.message}";
-    exit 255;
+    log(FATAL, $response.message);
   }
 }
 
@@ -153,10 +143,9 @@ multi MAIN('o', 'i', Str $org-name, Str $role, Str $user) is export {
 multi MAIN('org', 'invite', Str $org-name, Str $role, Str $user) is export {
   my $response = org-invite(config-value('key'), $org-name, $role, $user);
   if $response.success {
-    say '>>= Invitation sent';
+    log(MSG, 'Invitation sent');
   } else {
-    $*ERR.say: '=<< Failed: ' ~ $response.message;
-    exit 255;
+    log(FATAL, $response.message);
   }
 }
 
@@ -166,10 +155,9 @@ multi MAIN('o', 'mod', Str $org-name, Str $role, Str $user) is export {
 multi MAIN('org', 'modify', Str $org-name, Str $role, Str $user) is export {
   my $response = org-mod(config-value('key'), $org-name, $role, $user);
   if $response.success {
-    say '>>= User\'s role was modified';
+    log(MSG, 'User\'s role was modified');
   } else {
-    $*ERR.say: '=<< Failed: ' ~ $response.message;
-    exit 255;
+    log(FATAL, $response.message);
   }
 }
 
@@ -180,23 +168,21 @@ multi MAIN('reset-password') is export {
   my $un = prompt-wrapper('>>= Username: ') while ($un//'').chars < 3;
   my $response = init-reset-password($un);
   if ! $response.success {
-    $*ERR.say: '=<< There was an error communicating with the service, please';
-    $*ERR.say: '    try again in a few minutes.';
-    exit 255;
+    log(FATAL, ['There was an error communicating with the service, please',
+                'try again in a few minutes.'].join("\n"));
   }
-  say '>>= A reset key was successfully requested, please check your email';
+  log(MSG, 'A reset key was successfully requested, please check your email');
   my $key  = prompt-wrapper('>>= What is the key in your email (ctrl+c to cancel)? ') while ($key//'') eq '';
   my $pass = pass-wrapper('>>= New Password: ') while ($pass//'').chars < 8;
   $response = reset-password($un, $key, $pass);
   if ! $response.success {
-    $*ERR.say: "=<< Password reset failed: {$response<message>}";
-    exit 255;
+    log(FATAL, 'Password reset failed: %s', $response<message>);
   }
   write-to-user-config({
     key => $response.key,
     un  => $un,
   });
-  say ">>= Password reset successful, you now have a new key and can upload dists";
+  log(MSG, 'Password reset successful, you now have a new key and can upload dists');
 }
 
 multi MAIN('reg') is export {
@@ -206,21 +192,20 @@ multi MAIN('register') is export {
   my ($em, $un, $pw);
   $em = prompt-wrapper('>>= Email: ');
   $em = prompt-wrapper('>>= Email: ') while ($em//'').chars < 6
-                                 && 1 == $*ERR.say('=<< Please enter a valid email');
+                                         && Nil ~~ log(ERROR, 'Please enter a valid email');
   $un = prompt-wrapper('>>= Username: ');
   $un = prompt-wrapper('>>= Username: ') while ($un//'').chars < 3
-                                    && 1 == $*ERR.say('=<< Username must be longer than 3 chars');
+                                            && Nil ~~ log(ERROR, 'Username must be longer than 3 chars');
   $pw = pass-wrapper('>>= Password: ');
   $pw = pass-wrapper('>>= Password: ')  while ($pw//'').chars < 8
-                                      && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
+                                           && Nil ~~ log(ERROR, 'Password must be longer than 8 chars');
 
   my $response = register($em, $un, $pw);
 
   if ! $response.success {
-    $*ERR.say: "=<< Registration failed: {$response.message}";
-    exit 255;
+    log(FATAL, 'Registration failed: %s', $response.message);
   }
-  say ">>= Registration successful, requesting auth key";
+  log(MSG, 'Registration successful, requesting auth key');
   my $*USERNAME = $un;
   my $*PASSWORD = $pw;
   MAIN('login');
@@ -235,22 +220,20 @@ multi MAIN('login') is export {
   my $pw = $*PASSWORD // '';
   $un = prompt-wrapper('>>= Username: ');
   $un = prompt-wrapper('>>= Username: ') while ($un//'').chars < 3
-                                    && 1 == $*ERR.say('=<< Username must be longer than 3 chars');
+                                            && Nil ~~ log(ERROR, 'Username must be longer than 3 chars');
   $pw = pass-wrapper('>>= Password: ');
   $pw = pass-wrapper('>>= Password: ')  while ($pw//'').chars < 8
-                                      && 1 == $*ERR.say('=<< Password must be longer than 8 chars');
+                                           && log(ERROR, 'Password must be longer than 8 chars');
 
   my $response = login($un, $pw);
   if ! $response.success {
-    $*ERR.say: "=<< Failed to login: {$response.message}";
-    exit 255;
+    log(FATAL, 'Failed to login: %s', $response.message);
   }
 
   my $ukey = $response.key;
   $response = org-list($ukey);
   if ! $response.success {
-    $*ERR.say: "=<< Failed to retrieve user groups";
-    exit 255;
+    log(FATAL, 'Failed to retrieve user groups');
   }
 
   write-to-user-config({
@@ -258,10 +241,10 @@ multi MAIN('login') is export {
     un     => $un,
     groups => $response.groups,
   });
-  say ">>= Login successful, you can now upload dists";
+  log(MSG, 'Login successful, you can now upload dists');
 }
 
-multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bool :$development = False) is export {
+multi MAIN('checkbuild', Str :f($file) = '', Bool :a($auth-mismatch-error) = False, Bool :d($development) = False) is export {
   my $skip-meta;
   my $root = '.';
   my $sep = '.'.IO.SPEC.dir-sep;
@@ -427,10 +410,10 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
   True;
 }
 
-multi MAIN('m', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+multi MAIN('m', Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
   MAIN('meta', :$name, :$website, :$email);
 }
-multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+multi MAIN('meta', Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
     $*ERR.say: '=<< You must login to change your info';
@@ -440,15 +423,15 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
   my $ukey = "zef:{config-value('un')}";
   my $response = try get('http://360.zef.pm/meta.json');
   if $response{$ukey} {
-    say ">>= Name:    {$response{$ukey}<name>//'<none provided>'}";
-    say ">>= Email:   {$response{$ukey}<email>//'<none provided>'}";
-    say ">>= Website: {$response{$ukey}<website>//'<none provided>'}";
+    log(MSG, 'Name:    %s', $response{$ukey}<name>//'<none provided>');
+    log(MSG, 'Email:   %s', $response{$ukey}<email>//'<none provided>');
+    log(MSG, 'Website: %s', $response{$ukey}<website>//'<none provided>');
     my $should-update = prompt-wrapper('>>= Would you like to update [y/N]? ').trim;
     if $should-update.uc !~~ 'Y'|'YE'|'YES' {
       exit 0;
     }
   } else {
-    say '>>= No existing meta for current user';
+    log(MSG, 'No existing meta for current user');
   }
 
   my %data;
@@ -470,16 +453,15 @@ multi MAIN('meta', Str :$name is copy, Str :$website is copy, Str :$email is cop
 
     last if $response.success;
     if ($response.message//'') eq 'expired' {
-      $*ERR.say: '=<< Key is expired, please login:';
+      log(ERROR, 'Key is expired, please login:');
       MAIN('login');
       reload-config;
       next;
     }
     my $error = $response.message // 'no reason';
-    $*ERR.say: '=<< There was an error, please try again in a few minutes';
-    exit 255;
+    log(FATAL, "There was an error, please try again in a few minutes\nMessage from server: %s", $error);
   }
-  $*ERR.say: '=<< Your meta info has been updated';
+  log(MSG, 'Your meta info has been updated');
 }
 
 multi MAIN('o', 'l') is export {
@@ -488,31 +470,28 @@ multi MAIN('o', 'l') is export {
 multi MAIN('org', 'list') is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    $*ERR.say: '=<< You must login to upload';
-    exit 255;
+    log(FATAL, 'You must login to upload');
   }
 
   my $response = org-list(config-value('key'));
   if $response.success {
-    say '>>= Not a member of any orgs, yet' unless $response.groups;
-    say '>>= R Org Name' if $response.groups;
+    log(MSG, 'Not a member of any orgs, yet') unless $response.groups;
+    log(MSG, 'R Org Name') if $response.groups;
     for $response.groups -> $g {
-      say ">>= {$g<role>.substr(0,1)} {$g<group>}";
+      log(MSG, '%s %s', $g<role>.substr(0,1), $g<group>);
     }
   } else {
-    $*ERR.say: '=<< Something went wrong';
-    exit 254;
+    log(FATAL, $response.message);
   }
 }
 
-multi MAIN('o', 'meta', Str $org-name, Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+multi MAIN('o', 'meta', Str $org-name, Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
   MAIN('o', 'meta', $org-name, :$name, :$website, :$email);
 }
-multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is copy, Str :$email is copy) is export {
+multi MAIN('org', 'meta', Str $org-name, Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    $*ERR.say: '=<< You must login to change your org\'s info';
-    exit 255;
+    log(FATAL, 'You must login to change your org\'s info');
   }
   my %data;
   if ($name//'') eq '' && ($website//'') eq '' && ($email//'') eq '' {
@@ -528,8 +507,7 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
     %data{$_}:delete if %data{$_} eq '';
   }
   unless +%data.keys {
-    say '>>= Nothing to update';
-    exit 0;
+    log(MSG, 'Nothing to update');
   }
   %data<org> = $org-name;
   my $response = Fez::Types::api-response.new(:!success);
@@ -538,16 +516,15 @@ multi MAIN('org', 'meta', Str $org-name, Str :$name is copy, Str :$website is co
 
     last if $response.success;
     if ($response.message//'') eq 'expired' {
-      $*ERR.say: '=<< Key is expired, please login:';
+      log(ERROR, '=<< Key is expired, please login:');
       MAIN('login');
       reload-config;
       next;
     }
     my $error = $response.message // 'no reason';
-    $*ERR.say: '=<< There was an error: ' ~ $error;
-    exit 255;
+    log(FATAL, 'There was an error: %s', $error);
   }
-  $*ERR.say: "=<< $org-name\'s meta info has been updated";
+  log(MSG, '%s\'s meta info has been updated', $org-name);
 }
 
 multi MAIN('up', Str :i($file) = '', Bool :d($dry-run) = False, Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
@@ -556,24 +533,21 @@ multi MAIN('up', Str :i($file) = '', Bool :d($dry-run) = False, Bool :s($save-au
 multi MAIN('upload', Str :i($file) = '', Bool :d($dry-run) = False,  Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    $*ERR.say: '=<< You must login to upload';
-    exit 255;
+    log(FATAL, 'You must login to upload');
   }
   my $fn;
   try {
     CATCH { default { printf "=<< ERROR: %s\n", .message; exit 255; } }
     $fn = $file || bundle('.'.IO.absolute);
     if '' ne $file && ! $file.IO.f {
-      $*ERR.say: "=<< Cannot find $file";
-      exit 255;
+      log(FATAL, 'Cannot find %s', $file);
     }
   };
   if !$force {
     if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
       my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
       if $resp.lc ~~ any('n'|'no'|'') {
-        $*ERR.say: '=<< Ok, exiting';
-        exit 255;
+        log(FATAL, 'Ok, exiting');
       }
     }
   }
@@ -589,51 +563,50 @@ multi MAIN('upload', Str :i($file) = '', Bool :d($dry-run) = False,  Bool :s($sa
 
     last if $response.success;
     if ($response.message//'') eq 'expired' {
-      $*ERR.say: '=<< Key is expired, please login:';
+      log(ERROR, 'Key is expired, please login:');
       MAIN('login');
       reload-config;
       next;
     }
     my $error = $response.message // 'no reason';
-    $*ERR.say: "=<< Something went wrong while authenticating: $error. Do you need to run 'fez login' again?";
-    exit 255;
+    log(FATAL, "Something went wrong while authenticating: %s.\nDo you need to run 'fez login' again?", $error);
   }
 
   if '' eq $file && !$save-autobundle {
     try {
       CATCH { default {
-        $*ERR.say: "=<< Failed to remove temporary file {$fn.relative}: $_";
+        log(ERROR, 'Failed to remove temporary file %s: %s', $fn.relative, $_);
       } }
       $fn.unlink;
     }
     if $fn.parent.dir.elems == 0 {
       try {
         CATCH { default {
-          $*ERR.say: "=<< Failed to remove directory {$fn.parent.relative}: $_";
+          log(ERROR, 'Failed to remove directory %s: %s', $fn.parent.relative, $_);
         } }
         $fn.parent.rmdir;
       }
     }
   }
-  say '>>= Hey! You did it! Your dist will be indexed shortly.';
+  log(MSG, 'Hey! You did it! Your dist will be indexed shortly.');
 }
 
 
 multi MAIN('ls', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
-  MAIN('list', $name, $url);
+  MAIN('list', $name, :$url);
 }
 multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
   MAIN('login') unless config-value('key');
   my $show-login = False;
   my $response = org-list(config-value('key'));
   if ! $response.success {
-    $*ERR.say: "=<< Failed to retrieve user orgs, the following list may be incomplete";
+    log(ERROR, 'Failed to retrieve user orgs, the following list may be incomplete');
     $show-login = True;
   }
   if $response.success {
     write-to-user-config({ groups => $response.groups });
   } else {
-    $*ERR.say: "=<< Failed to update config";
+    log(ERROR, 'Failed to update config');
   }
   my @auths = ["zef:{config-value('un')}", |($response.groups//()).map({"zef:{$_<group>}"})];
   my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
@@ -643,8 +616,12 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
                                          Version.new($^b<ver>//$^b<vers>//$^b<version>)
                                       !! $^a<name>.lc cmp $^b<name>.lc})
                              .map({$_<dist>});
-  say ">>= {+@dists ?? @dists.join("\n>>= ") !! 'No results'}";
-  $*ERR.say("=<< A login may be required to see updated results") if $show-login;
+  if +@dists {
+    log(MSG, $_) for @dists;
+  } else {
+    log(MSG, 'No results');
+  }
+  log(WARN, 'A login may be required to see updated results') if $show-login;
 }
 
 multi MAIN('rm', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
@@ -653,41 +630,37 @@ multi MAIN('rm', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is exp
 multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
   my $response = org-list(config-value('key'));
   if ! $response.success {
-    $*ERR.say: "=<< Failed to retrieve user orgs, the following list may be incomplete";
+    log(ERROR, 'Failed to retrieve user orgs, the following list may be incomplete');
   }
   if $response.success {
     write-to-user-config({ groups => $response<groups> });
   } else {
-    $*ERR.say: "=<< Failed to update config";
+    log(ERROR, 'Failed to update config');
   }
   my @auths = ["zef:{config-value('un')}", |@($response.groups//[]).map({"zef:{$_<group>}"})];
   my $d = (get($url)||[]).grep({$_<auth> (elem) @auths})
                             .grep({$dist eq $_<dist>})
                             .first;
   if !$d || !$d<path> {
-    $*ERR.say: "=<< Couldn't find $dist";
-    exit -1;
+    log(FATAL, 'Couldn\'t find %s', $dist);
   }
   try {
     CATCH { default { } }
     my $date = try_dateparse(head( (S/'index.json'?$/$d<path>/ with $url) )<Last-Modified>);
     my $diff = DateTime.now - $date;
     if $diff > 86400 {
-      $*ERR.say: "=<< It's past the 24 hour window for removing modules";
-      exit 255;
+      log(FATAL, 'It\'s past the 24 hour window for removing modules');
     }
   };
   $response = remove(config-value('key'), $d<dist>);
   if $response.success {
-    say '>>= Request received';
-    exit 0;
+    log(MSG, 'Request received');
   }
-  $*ERR.say: '=<< Error processing request';
-  exit -1;
+  log(FATAL, 'Error processing request');
 }
 
 multi MAIN('p', Bool :a($all) = False) is export {
-  MAIN('plugin', :$all);
+  MAIN('plugin', :a($all));
 }
 multi MAIN('plugin', Bool :a($all) = False) is export {
   my @base = qw<bundlers requestors>;
@@ -707,6 +680,9 @@ multi MAIN('plugin', Bool :a($all) = False) is export {
   }
 }
 
+multi MAIN('p', Str $key where * !~~ 'key'|'un', Str $action where * ~~ 'remove'|'append'|'prepend', Str $value) is export {
+  MAIN('plugin', $key, $action, $value);
+}
 multi MAIN('plugin', Str $key where * !~~ 'key'|'un', Str $action where * ~~ 'remove'|'append'|'prepend', Str $value) is export {
   if $action ~~ 'append'|'prepend' {
     my $cfg = user-config{$key}//[];
@@ -720,37 +696,25 @@ multi MAIN('plugin', Str $key where * !~~ 'key'|'un', Str $action where * ~~ 're
   }
 }
 
-multi MAIN('plugin', Bool :h(:$help)?) is export {
-  note qq:to/END/
-    Fez - Raku / Perl6 package utility
-
-    USAGE
-
-      fez plugin
-        - lists current plugins and config locations
-      fez plugin <key> 'remove|append|prepend' <value>
-        - removes/appends/prepends <value> from <key>
-
-  END
-}
-
-multi MAIN('o', 'h') { MAIN('org', :h); }
-multi MAIN('org', 'help') { MAIN('org', :h); }
-multi MAIN('org', Bool :h(:$help)?) is export {
-  say %?RESOURCES<usage/org>.slurp;
-}
-
-multi MAIN('h') { MAIN(:h); }
-multi MAIN('help') { MAIN(:h); }
+constant \HELP-HEADER = 'Fez - Raku dist manager';
+multi MAIN('h') is export { MAIN(:help); }
+multi MAIN('help') is export { MAIN(:help); }
 multi MAIN(Bool :h(:$help)?) is export {
+  say HELP-HEADER ~ "\n";
   say S:g/'$user-config-path'/{user-config-path}/ given %?RESOURCES<usage/_>.slurp;
 }
 
 multi USAGE is export {
-  my $key = @*ARGS.grep({!$_.starts-with('-')}).first;
-  my $usage = $?DISTRIBUTION.meta<resources>.grep({$_.starts-with: "usage/$key"}).first;
-  if $usage {
-    say %?RESOURCES{$usage}.slurp;
+  my @keys = |@*ARGS.grep({!$_.starts-with('-')});
+  my $rx   = @keys.join('<-[_]>*_') ~ '<-[_]>*';
+  my @usage = $?DISTRIBUTION.meta<resources>.grep({$_ ~~ rx/ <$rx> /});
+  if +@usage > 1 {
+    my @options = @usage.map({$_.=substr(6); $_ = S:g/'_'/ / given $_; });
+    say HELP-HEADER ~ "\n";
+    say "Did you mean any of the following?\n  fez {@options.join("\n  fez ")}\n";
+  } elsif +@usage == 1 {
+    say HELP-HEADER ~ "\n";
+    say %?RESOURCES{@usage[0]}.slurp;
   } else {
     MAIN(:help);
   }
@@ -799,9 +763,14 @@ multi MAIN('refresh', Bool:D :d($dry-run) = False) is export {
   for %rsult.keys.sort -> $k {
     log(DEBUG, "%s:\n%s", $k, %rsult{$k}.keys.sort.map({ "  $_ => [{%rsult{$k}{$_}.join(", ")}]" }).join("\n"));
   }
+
+  my $ignorer = $cwd.add('.gitignore').e
+             ?? parse(|$cwd.IO.add('.gitignore').IO.slurp.lines)
+             !! Any;
   
   my @rsrcs = $cwd.add('resources').d
     ?? get-files-in-dir($cwd.add('resources'), -> $f { True })
+         .grep({ Any ~~ $ignorer || $ignorer.rmatch($_) })
          .map({ S/^ 'resources' [\/|\\] // given $_; })
     !! ();
 
@@ -925,10 +894,10 @@ multi MAIN('command') is export {
   }
 }
 
-multi MAIN('r', Str:D $command, :$timeout is copy) is export {
-  MAIN('run', $command, :$timeout);
+multi MAIN('r', Str:D $command, :t($timeout) is copy = 300) is export {
+  MAIN('run', $command, :t($timeout));
 }
-multi MAIN('run', Str:D $command, :$timeout is copy) is export {
+multi MAIN('run', Str:D $command, :t($timeout) is copy = 300) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
 
