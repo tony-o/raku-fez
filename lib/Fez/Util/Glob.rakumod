@@ -22,6 +22,7 @@ multi sub parse(*@lines, :$want-re = False) is export {
 }
 
 multi sub parse(Str:D $line, :$want-re = False) is export {
+  return Empty if $line.starts-with('#');
   my Str $re = '';
   my @parts = $line.split('', :skip-empty);
   my $i = 0;
