@@ -696,6 +696,7 @@ multi MAIN(Bool :h(:$help)?) {
 
       register              registers you up for a new account
       login                 logs you in and saves your key info
+      checkbuild            checks the build for errors
       upload                creates a distribution tarball and uploads
       meta                  update your public meta info (website, email, name)
       reset-password        initiates a password reset using the email
