@@ -213,7 +213,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
       from-j('./META6.json'.IO.slurp);
     } else {
       printf ">>= Looking in \"%s\" for META6.json\n", $file.IO.resolve.relative;
-      my @files = ls($file);
+      my @files = ls-bundle($file);
       my @dirs = @files.map({$_.IO.relative.split($sep).first}).unique;
       if @dirs.elems != 1 {
         $*ERR.say: '=<< No single root directory found, all dists must extract to a single directory';
@@ -259,7 +259,7 @@ multi MAIN('checkbuild', Str :$file = '', Bool :$auth-mismatch-error = False, Bo
   $error('ver cannot be "*"', 5) if $ver.trim eq '*';
 
   my $errors;
-  my @files = $file ?? ls($file) !! do {
+  my @files = $file ?? ls-bundle($file) !! do {
     my @xs;
     @xs.push('lib'.IO) if 'lib'.IO.d;
     @xs.push('resources'.IO) if 'resources'.IO.d;

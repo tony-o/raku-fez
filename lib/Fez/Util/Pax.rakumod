@@ -1,22 +1,24 @@
 unit class Fez::Util::Pax;
 
 use Fez::Util::Glob;
+use Fez::Util::FS;
 
-sub ls($x, $ignore) { $x.IO.dir.grep($ignore).map({ $_.d ?? |ls($_, $ignore) !! $_.resolve.relative }); }
-
-method bundle($location) {
+method bundle($location, Bool :$dry-run = False) {
   if !('sdist'.IO.d.so) {
     mkdir 'sdist';
   }
 
   my $ignorer = '.'.IO.add('.gitignore').IO.f
-             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*')
+             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*', :git-ignore)
              !! parse('.git/*', '.precomp', 'sdist/*');
              
   my @manifest = ls('.'.IO, -> $fn {
     $ignorer.rmatch($fn.Str)
   });
   %*ENV<COPYFILE_DISABLE>='bad_apple_no_cookie_for_you'; #exclude macOS's AppleDouble data files - issue 72
+
+  return @manifest if $dry-run;
+
   my $tarczf = run 'pax', '-w', '-z', '-s', '#^#dist/#', '-f', $location, |@manifest, :err, :out;
   die 'Failed to pax: ' ~ $tarczf.err.slurp.trim unless $tarczf.exitcode == 0;
   return False unless $location.IO.f;
