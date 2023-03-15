@@ -28,7 +28,8 @@
     "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
     "Fez::Util::Uri": "lib/Fez/Util/Uri.rakumod",
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
-    "Fez::Web": "lib/Fez/Web.rakumod"
+    "Fez::Web": "lib/Fez/Web.rakumod",
+    "Fez": "lib/Fez.rakumod"
   },
   "resources": [
     "config.json",
@@ -62,5 +63,5 @@
     "usage/version"
   ],
   "source-url": "https://github.com/tony-o/raku-fez.git",
-  "version": "40"
+  "version": "43"
 }

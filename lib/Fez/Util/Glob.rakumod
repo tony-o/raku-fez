@@ -15,13 +15,14 @@ constant %spesh = {'.'=>1, '+'=>1, '*'=>1,
                    '|'=>1, '/'=>1, '-'=>1,
                    '!'=>1, '~'=>1, '\\'=>1};
 
-multi sub parse(*@lines, :$want-re = False) is export {
+multi sub parse(*@lines, Bool :$git-ignore = False) is export {
   globbalizer.new(
-    :patterns(@lines.map({my $re = parse($_, :want-re); rx/^ <$re> $/;}).list),
+    :patterns(@lines.map({my $re = parse($_, :want-re, :$git-ignore); rx/ <$re> /;}).list),
   );
 }
 
-multi sub parse(Str:D $line, :$want-re = False) is export {
+multi sub parse(Str:D $line, Bool :$git-ignore = False, Bool :$want-re = False) is export {
+  return Empty if $line.trim.starts-with('#');
   my Str $re = '';
   my @parts = $line.split('', :skip-empty);
   my $i = 0;
@@ -48,7 +49,8 @@ multi sub parse(Str:D $line, :$want-re = False) is export {
         last if $parens < 0;
         $i++;
       }
-      my $sub-re = parse($line.substr($pos, $i-$pos), :want-re);
+      my $sub-re = parse($line.substr($pos, $i-$pos), :want-re,);
+      $sub-re.=substr(1,*-1) if $sub-re.substr(0,1) eq '^';
       $sub-re.=substr(1,*-1) if $sub-re.substr(0,1) eq '(';
       $sub-re ~~ s:g/\\\|/|/;
       $re ~= $sub-re ~ '><-[\/]>*';
@@ -100,6 +102,15 @@ multi sub parse(Str:D $line, :$want-re = False) is export {
     $i++;
   }
   # "DEBUG: $line -> $re\n".say;
+  if $git-ignore {
+    if $line.contains('/') {
+      $re = "^{$re}\$";
+    } else {
+      $re = "{$re}\$";
+    }
+  } else {
+    $re = "^{$re}\$";
+  }
   return $re if $want-re;
   globbalizer.new(:patterns( rx/^ <$re> $/ ));
 }

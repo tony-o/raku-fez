@@ -254,7 +254,7 @@ multi MAIN('checkbuild', Str :f($file) = '', Bool :a($auth-mismatch-error) = Fal
       from-j('./META6.json'.IO.slurp);
     } else {
       printf ">>= Looking in \"%s\" for META6.json\n", $file.IO.resolve.relative;
-      my @files = ls($file);
+      my @files = ls-bundle($file);
       my @dirs = @files.map({$_.IO.relative.split($sep).first}).unique;
       if @dirs.elems != 1 {
         $*ERR.say: '=<< No single root directory found, all dists must extract to a single directory';
@@ -300,7 +300,7 @@ multi MAIN('checkbuild', Str :f($file) = '', Bool :a($auth-mismatch-error) = Fal
   $error('ver cannot be "*"', 5) if $ver.trim eq '*';
 
   my $errors;
-  my @files = $file ?? ls($file) !! do {
+  my @files = $file ?? ls-bundle($file) !! do {
     my @xs;
     @xs.push('lib'.IO) if 'lib'.IO.d;
     @xs.push('resources'.IO) if 'resources'.IO.d;
@@ -729,7 +729,7 @@ multi MAIN('refresh', Bool:D :d($dry-run) = False) is export {
   log(DEBUG, "found META6.json in {$cwd.relative}");
   
   log(DEBUG, "scanning files in {$cwd.add('lib').relative}");
-  my @files = get-files-in-dir($cwd.add('lib'), -> $f { 
+  my @files = ls($cwd.add('lib'), -> $f { 
     $f.basename ~~ m/'.'['pm6'|'rakumod']$/;
   });
   log(DEBUG, @files.join("\n"));
@@ -769,7 +769,7 @@ multi MAIN('refresh', Bool:D :d($dry-run) = False) is export {
              !! Any;
   
   my @rsrcs = $cwd.add('resources').d
-    ?? get-files-in-dir($cwd.add('resources'), -> $f { True })
+    ?? ls($cwd.add('resources'), -> $f { True })
          .grep({ Any ~~ $ignorer || $ignorer.rmatch($_) })
          .map({ S/^ 'resources' [\/|\\] // given $_; })
     !! ();

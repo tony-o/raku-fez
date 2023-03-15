@@ -2,7 +2,7 @@
 
 To install:
 
-...
+```
 $ zef install fez
 ```
 

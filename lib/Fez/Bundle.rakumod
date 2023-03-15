@@ -1,6 +1,7 @@
 unit module Fez::Bundle;
 
 use Fez::Util::Json;
+use Fez::Util::FS;
 
 my $CONFIG = from-j(%?RESOURCES<config.json>.IO.slurp);
 my @chandlers = |$CONFIG<bundlers>; 
@@ -19,7 +20,7 @@ for @chandlers -> $h {
 die 'Unable to find a suitable handler for bundling (tried pax, and tar), please ensure one is in your path'
   unless @handlers.elems;
 
-sub bundle($target) is export {
+sub bundle($target, :$dry-run = False) is export {
   my $sdist  = $target.IO.absolute.IO.add('sdist');
   mkdir $sdist.absolute unless $sdist.d;
 
@@ -34,7 +35,7 @@ sub bundle($target) is export {
   for @handlers -> $handler {
     CATCH { default { $*IN.print('=<< ' ~ .message ~ "\n"); $caught = True; .resume; } }
     $caught = False;
-    $out = $handler.bundle($location.absolute);
+    $out = $handler.bundle($location.absolute, :$dry-run);
     next if $caught;
     return $location;
   }
@@ -46,7 +47,7 @@ sub cat($target, $file) is export {
   @handlers.map({ try $_.cat($target, $file) }).grep(*.defined).first;
 }
 
-sub ls($target) is export {
+sub ls-bundle($target) is export {
   return Failure unless $target.IO.f;
   @handlers.map({ try $_.ls($target) }).grep(*.defined).first;
 }

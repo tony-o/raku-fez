@@ -1,20 +1,20 @@
 unit class Fez::Util::Tar;
 
 use Fez::Util::Glob;
+use Fez::Util::FS;
 
-sub ls($x, $ignore) { $x.IO.dir.grep($ignore).map({ $_.d ?? |ls($_, $ignore) !! $_.resolve.relative }); }
-
-method bundle($location) {
+method bundle($location, :$dry-run) {
   if !('sdist'.IO.d.so) {
     mkdir 'sdist';
   }
   my $cwd = $*CWD.resolve;
   my $pwd = '.'.IO.resolve.basename;
   my $ignorer = '.'.IO.add('.gitignore').IO.f
-             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*')
+             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git', '.github', 'sdist/*', :git-ignore)
              !! parse('.git', '.precomp', 'sdist/*');
   my @manifest = ls('.'.IO.absolute, -> $fn { $ignorer.rmatch($fn.relative.Str); })
                .map({$pwd.IO.add($_)});
+  return @manifest if $dry-run;
   $*CWD = $cwd.add('..').resolve;
   my $tarczf = run 'tar', '-czf', $location, |@manifest, :err, :out;
   $*CWD = $cwd;
