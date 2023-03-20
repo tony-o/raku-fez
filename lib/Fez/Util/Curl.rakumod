@@ -1,13 +1,16 @@
 unit class Fez::Util::Curl;
 
+use Fez::Util::Proc;
+
 method head($url, :%headers = ()) {
   my @args = ('curl', '-I');
   @args.push("-H", "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  my $proc = run(|@args, :out, :err);
-  die 'curl error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
-  %($_.index(':') ?? |$_.split(':', 2).map(*.trim) !! |($_.trim, True) for |$proc.out.slurp.lines[1..*].grep(* ne ''));
+  my ($rc, $out, $err) = run-p('CURL', |@args);
+  die 'curl error: ' ~ $err.trim if $rc != 0;
+  %($_.index(':') ?? |$_.split(':', 2).map(*.trim) !! |($_.trim, True)
+    for |$out.lines[1..*].grep(* ne ''));
 }
 
 method get($url, :%headers = ()) {
@@ -15,9 +18,10 @@ method get($url, :%headers = ()) {
   @args.push("-H", "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  my $proc = run(|@args, :out, :err);
-  die 'curl error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
-  $proc.out.slurp;
+  my ($rc, $out, $err) = run-p('CURL', |@args);
+  dd [0, |run-p('CURL', |@args)];
+  die 'curl error: ' ~ $err.trim if $rc != 0;
+  $out;
 }
 
 method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
@@ -27,11 +31,11 @@ method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
   @args.push("-H", "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  my $proc = run(|@args, :out, :err);
-  die 'curl error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
-  $proc.out.slurp;
+  my ($rc, $out, $err) = run-p('CURL', |@args);
+  die 'curl error: ' ~ $err.trim if $rc != 0;
+  $out;
 }
 
 method able {
-  (run 'curl', '--version', :out, :err).exitcode == 0;
+  run-p('CURL', 'curl', '--version')[0] == 0;
 }

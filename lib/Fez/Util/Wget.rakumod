@@ -1,13 +1,16 @@
 unit class Fez::Util::Wget;
 
+use Fez::Util::Proc;
+
 method head($url, :%headers = ()) {
   my @args = ('wget', '-qO-','--spider', '-S', '--tries', '1');
   @args.push('--header', "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  my $proc = run(|@args, :out, :err);
-  die 'wget error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
-  %($_.index(':') ?? |$_.split(':', 2).map(*.trim) !! |($_.trim, True) for |$proc.err.slurp.lines[1..*].grep(* ne ''));
+  my ($rc, $out, $err) = run-p('WGET', |@args);
+  die 'wget error: ' ~ $err.trim if $rc != 0;
+  %($_.index(':') ?? |$_.split(':', 2).map(*.trim) !! |($_.trim, True)
+    for |$err.lines[1..*].grep(* ne ''));
 }
 
 method get($url, :%headers = ()) {
@@ -15,9 +18,9 @@ method get($url, :%headers = ()) {
   @args.push('--header', "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  my $proc = run(|@args, :out, :err);
-  die 'wget error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
-  $proc.out.slurp;
+  my ($rc, $out, $err) = run-p('WGET', |@args);
+  die 'wget error: ' ~ $err.trim if $rc != 0;
+  $out;
 }
 
 method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
@@ -28,11 +31,11 @@ method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
   @args.push('--header', "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 
-  my $proc = run(|@args, :out, :err);
-  die 'wget error: ' ~ $proc.err.slurp.trim if $proc.exitcode != 0;
-  $proc.out.slurp;
+  my ($rc, $out, $err) = run-p('WGET', |@args);
+  die 'wget error: ' ~ $err.trim if $rc != 0;
+  $out;
 }
 
 method able {
-  (run 'wget', '--version', :out, :err).exitcode == 0;
+  run-p('WGET', 'wget', '--version')[0] == 0;
 }

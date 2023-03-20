@@ -416,12 +416,12 @@ multi MAIN('m', Str :n($name) is copy, Str :w($website) is copy, Str :e($email) 
 multi MAIN('meta', Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
-    $*ERR.say: '=<< You must login to change your info';
+    log(ERROR, 'You must login to change your info');
     exit 255;
   }
 
   my $ukey = "zef:{config-value('un')}";
-  my $response = try get('http://360.zef.pm/meta.json');
+  my $response = get('http://360.zef.pm/meta.json');
   if $response{$ukey} {
     log(MSG, 'Name:    %s', $response{$ukey}<name>//'<none provided>');
     log(MSG, 'Email:   %s', $response{$ukey}<email>//'<none provided>');
@@ -544,7 +544,7 @@ multi MAIN('upload', Str :i($file) = '', Bool :d($dry-run) = False,  Bool :s($sa
     }
   };
   if !$force {
-    if !so MAIN('checkbuild', :file($fn.IO.absolute), :auth-mismatch-error) {
+    if !so MAIN('checkbuild', :f($fn.IO.absolute), :a) {
       my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
       if $resp.lc ~~ any('n'|'no'|'') {
         log(FATAL, 'Ok, exiting');
@@ -666,14 +666,14 @@ multi MAIN('plugin', Bool :a($all) = False) is export {
   my @base = qw<bundlers requestors>;
   my $user-config = user-config;
   my @keys = $all ?? $user-config.keys.sort !! @base.grep({ $user-config{$_}.defined && +($user-config{$_}) });
-  say ">>= User config: {user-config-path}" if +@keys;
+  log(MSG, 'User config: %s', user-config-path) if +@keys;
   for @keys -> $k {
     say ">>=   $k: ";
     say ">>=     {$user-config{$k}.join("\n>>=     ")}";
   }
   my $env-config = env-config;
   @keys = $all ?? $env-config.keys.sort !! @base.grep({ $env-config{$_}.defined && +($env-config{$_}) });
-  say ">>= Environment config: {env-config-path}" if +@keys;
+  log(MSG, 'Environment config: %s', env-config-path) if +@keys;
   for @keys -> $k {
     say ">>=   $k: ";
     say ">>=     {$env-config{$k}.join("\n>>=     ")}";
@@ -687,12 +687,12 @@ multi MAIN('plugin', Str $key where * !~~ 'key'|'un', Str $action where * ~~ 're
   if $action ~~ 'append'|'prepend' {
     my $cfg = user-config{$key}//[];
     write-to-user-config($key => $cfg.^can($action).first.($cfg, $value));
-    say ">>= Added {$key}.'$value'";
+    log(MSG, 'Added %s.\'%s\'', $key, $value);
   } else {
     my $cfg = user-config{$key}//[];
     $cfg = $cfg.grep(* ne $value).unique;
     write-to-user-config($key => $cfg);
-    say ">>= Removed {$key}.'$value'";
+    log(MSG, 'Removed %s.\'%s\'', $key, $value);
   }
 }
 

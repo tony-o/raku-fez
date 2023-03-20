@@ -25,6 +25,7 @@
     "Fez::Util::META6": "lib/Fez/Util/META6.rakumod",
     "Fez::Util::Pass": "lib/Fez/Util/Pass.rakumod",
     "Fez::Util::Pax": "lib/Fez/Util/Pax.rakumod",
+    "Fez::Util::Proc": "lib/Fez/Util/Proc.rakumod",
     "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
     "Fez::Util::Uri": "lib/Fez/Util/Uri.rakumod",
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
