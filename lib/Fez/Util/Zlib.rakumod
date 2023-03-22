@@ -2,7 +2,7 @@ unit module Fez::Util::Zlib;
 
 use NativeCall;
 
-constant zlib = $*DISTRO.is-win ?? %?RESOURCES<lib/z.dll> !! ['z', v1];
+constant zlib = $*DISTRO.is-win ?? %?RESOURCES<lib/z.dll>.absolute !! ['z', v1];
 
 constant z-ok          = 0;
 constant z-stream-end  = 1;
