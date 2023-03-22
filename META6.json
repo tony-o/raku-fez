@@ -29,11 +29,13 @@
     "Fez::Util::Tar": "lib/Fez/Util/Tar.rakumod",
     "Fez::Util::Uri": "lib/Fez/Util/Uri.rakumod",
     "Fez::Util::Wget": "lib/Fez/Util/Wget.rakumod",
+    "Fez::Util::Zlib": "lib/Fez/Util/Zlib.rakumod",
     "Fez::Web": "lib/Fez/Web.rakumod",
     "Fez": "lib/Fez.rakumod"
   },
   "resources": [
     "config.json",
+    "lib/z.dll",
     "usage/_",
     "usage/checkbuild",
     "usage/command",
