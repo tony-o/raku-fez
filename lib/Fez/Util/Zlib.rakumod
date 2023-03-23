@@ -2,7 +2,7 @@ unit module Fez::Util::Zlib;
 
 use NativeCall;
 
-constant zlib = $*DISTRO.is-win ?? [%?RESOURCES<lib/z.dll>.absolute] !! ['z', v1];
+constant zlib = $*DISTRO.is-win ?? %?RESOURCES<lib/z.dll>.absolute !! 'z', v1;
 
 constant z-ok          = 0;
 constant z-stream-end  = 1;
@@ -15,11 +15,11 @@ constant z-buf-err     = -5;
 constant z-version-err = -6;
 
 sub compress-bound(ulong --> ulong)
-  is native(|zlib) is symbol('compressBound') { * };
-sub uncompress2(Buf[uint8], CArray[ulong], Buf[uint8], CArray[ulong] --> int32)
-  is native(|zlib) { * };
+  is native(zlib) is symbol('compressBound') { * };
+sub uncompress(Buf[uint8], CArray[ulong], Buf[uint8], ulong --> int32)
+  is native(zlib) { * };
 sub compress2(Buf[uint8], CArray[ulong], Buf[uint8], ulong, int32 --> int32)
-  is native(|zlib) { * };
+  is native(zlib) { * };
 
 sub cmprs(Str:D $fn, $data) is export {
   my Buf[uint8] $out  .= new;
@@ -34,17 +34,14 @@ sub cmprs(Str:D $fn, $data) is export {
 }
 
 sub dcmprs(Str:D $fn) is export {
-  my Buf[uint8]    $in    = $fn.IO.slurp(:bin);
-  my Buf[uint8]    $out  .= new;
-  my CArray[ulong] $inl  .= new;
-  my ulong         $dlen  = 1024; # double until !buf-err && !ok
+  my Buf[uint8] $in    = $fn.IO.slurp(:bin);
+  my Buf[uint8] $out  .= new;
+  my ulong      $dlen  = 1024; # double until !buf-err && !ok
   my $rc = z-buf-err;
   
-  $inl[0] = $in.bytes;
-
   while $rc ~~ z-buf-err {
     $out[$dlen] = 0;
-    $rc = uncompress2($out, CArray[ulong].new($dlen), $in, CArray[ulong].new($inl)); 
+    $rc = uncompress($out, CArray[ulong].new($dlen), $in, $in.bytes); 
     $dlen += $dlen if $rc != z-ok;
   }
 
