@@ -249,45 +249,48 @@ multi MAIN('checkbuild', Str :f($file) = '', Bool :a($auth-mismatch-error) = Fal
   my $root = '.';
   my $sep = '.'.IO.SPEC.dir-sep;
   my $meta = try {
+    CATCH { default { .rethrow; } }
     if $file eq '' {
-      say '>>= Inspecting ./META6.json';
+      log(MSG, 'Inspecting ./META6.json');
       from-j('./META6.json'.IO.slurp);
     } else {
-      printf ">>= Looking in \"%s\" for META6.json\n", $file.IO.resolve.relative;
+      log(MSG, 'Looking in %s for META6.json', $file.IO.resolve.relative);
       my @files = ls-bundle($file);
-      my @dirs = @files.map({$_.IO.relative.split($sep).first}).unique;
+      log(DEBUG, "Found files:\n%s", @files.map({"  {$_.name}"}).join("\n"));
+      my @dirs = @files.map({$_.name.split($sep).first}).unique;
+      log(DEBUG, 'Found unique directories: %s', @dirs.join(', '));
       if @dirs.elems != 1 {
-        $*ERR.say: '=<< No single root directory found, all dists must extract to a single directory';
+        log(ERROR, 'No single root directory found, all dists must extract to a single directory');
         exit 255;
       }
       $root = @dirs[0];
       my $fn = '';
       for @files -> $f {
-        $fn = $f if $f ~~ m/^(".$sep") ** 0..1 $root $sep 'META6.json'$/;
+        $fn = $f if $f.name ~~ m/^(".$sep") ** 0..1 $root $sep 'META6.json'$/;
       }
-      if (my $data = cat($file, $fn)) {
+      my $data;
+      try {
+        $data = $fn.slurp;
+        log(DEBUG, "data = %s", $data);
         from-j($data);
-      } else {
+      } or do {
         $skip-meta = True;
         False;
       }
     }
   } or do {
     if $skip-meta {
-      $*ERR.say: '=<< Unable to verify meta';
+      log(ERROR, 'Unable to verify meta');
     } else {
-      $*ERR.say: '=<< Unable to find META6.json';
+      log(ERROR, '=<< Unable to find META6.json');
       exit 255;
     }
   };
   return if $skip-meta;
   my $error = sub ($e, $ec?=255, Bool :$exit = True) {
-    $*ERR.say: "=<< $e";
-    if $exit {
-      $*ERR.say: '=<< If you\'re using git, make sure to commit your changes.' if '.git'.IO ~~ :d;
-      printf "=<< To inspect the file, check: %s\n", $file.IO.resolve.relative if $file;
-      exit $ec;
-    }
+    log(ERROR, '%s', $e);
+    log(ERROR, 'To inspect the file, check: %s', $file.IO.resolve.relative) if $file;
+    exit $ec if $exit;
   }
   $error('production in META is set to false') if !($meta<production>//True).so
                                                && !$development;
@@ -314,63 +317,59 @@ multi MAIN('checkbuild', Str :f($file) = '', Bool :a($auth-mismatch-error) = Fal
     }
     |@l;
   };
-  if @files[0] ~~ Failure {
-    $error('Unable to list dist files', :!exit);
-  } else {
-    my @provides = |$meta<provides>.values;
-    my @resources = |($meta<resources>//[]);
-    my %check;
-    for @files.grep({(
-        ( $file && $_ ~~ m/^('.'|'..')? $sep? $root $sep 'lib'/) 
-      ||(!$file && $_ ~~ m/$sep? 'lib'/)
-    ) && $_ ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
-      %check{$f}++;
-    }
-    for @provides.unique -> $f {
-      %check{$root.IO.add($f).relative}--;
-    }
-    for %check.keys.sort -> $f {
-      %check{$f}:delete if %check{$f} == 0;
-      next unless %check{$f};
-      $error(
-        sprintf(
-          "File \"%s\" in %s not found in %s",
-          $f,
-          %check{$f} == -1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
-          %check{$f} ==  1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
-        ),
-        :!exit
-      );
-    }
-    say '>>= meta<provides> looks OK' unless %check.keys;
-    $errors++ if %check.keys;
-
-    %check = ();
-    for @files.grep({(
-        ( $file && $_ ~~ m/^('.'|'..')? $sep? $root $sep 'resources'/)
-      ||(!$file && $_ ~~ m/$sep? 'resources'/)
-    ) && $_ !~~ m/'/'$/}) -> $f {
-      %check{S/^'/'// with $f}++;
-    }
-    for @resources.unique -> $f {
-      %check{$root.IO.add("resources/{$f}").relative}--;
-    }
-    for %check.keys -> $f {
-      %check{$f}:delete if %check{$f} == 0;
-      next unless %check{$f};
-      $error(
-        sprintf(
-          "File \"%s\" in %s not found in %s",
-          $f,
-          %check{$f} == -1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
-          %check{$f} ==  1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
-        ),
-        :!exit
-      );
-    }
-    say '>>= meta<resources> looks OK' unless %check.keys;
-    $errors++ if %check.keys;
+  my @provides = |$meta<provides>.values;
+  my @resources = |($meta<resources>//[]);
+  my %check;
+  for @files.grep({(
+      ( $file && $_.name ~~ m/^('.'|'..')? $sep? $root $sep 'lib'/) 
+    ||(!$file && $_.name ~~ m/$sep? 'lib'/)
+  ) && $_.name ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
+    %check{$f.name}++;
   }
+  for @provides.unique -> $f {
+    %check{$root.IO.add($f).relative}--;
+  }
+  for %check.keys.sort -> $f {
+    %check{$f}:delete if %check{$f} == 0;
+    next unless %check{$f};
+    $error(
+      sprintf(
+        "File \"%s\" in %s not found in %s",
+        $f,
+        %check{$f} == -1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
+        %check{$f} ==  1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
+      ),
+      :!exit
+    );
+  }
+  log(MSG, 'meta<provides> looks OK') unless %check.keys;
+  $errors++ if %check.keys;
+
+  %check = ();
+  for @files.grep({(
+      ( $file && $_.name ~~ m/^('.'|'..')? $sep? $root $sep 'resources'/)
+    ||(!$file && $_.name ~~ m/$sep? 'resources'/)
+  ) && $_.name !~~ m/'/'$/}) -> $f {
+    %check{S/^'/'// with $f.name}++;
+  }
+  for @resources.unique -> $f {
+    %check{$root.IO.add("resources/{$f}").relative}--;
+  }
+  for %check.keys -> $f {
+    %check{$f}:delete if %check{$f} == 0;
+    next unless %check{$f};
+    $error(
+      sprintf(
+        "File \"%s\" in %s not found in %s",
+        $f,
+        %check{$f} == -1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
+        %check{$f} ==  1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
+      ),
+      :!exit
+    );
+  }
+  log(MSG, 'meta<resources> looks OK') unless %check.keys;
+  $errors++ if %check.keys;
 
   my @groups = .map({.<group>}) with config-value('groups');
   if !($meta<auth>.substr(4) (elem) [(config-value('un')//'<unset>'), |@groups]) {
@@ -528,7 +527,7 @@ multi MAIN('org', 'meta', Str $org-name, Str :n($name) is copy, Str :w($website)
 }
 
 multi MAIN('up', Str :i($file) = '', Bool :d($dry-run) = False, Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
-  MAIN('upload', $file, :$save-autobundle, :$force);
+  MAIN('upload', :i($file), :s($save-autobundle), :f($force));
 }
 multi MAIN('upload', Str :i($file) = '', Bool :d($dry-run) = False,  Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
   MAIN('login') unless config-value('key');

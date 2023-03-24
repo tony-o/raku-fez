@@ -1,24 +1,8 @@
 unit class Fez::Util::Pax;
 
-use Fez::Util::Glob;
-use Fez::Util::FS;
 use Fez::Util::Proc;
 
-method bundle($location, Bool :$dry-run = False) {
-  if !('sdist'.IO.d.so) {
-    mkdir 'sdist';
-  }
-
-  my $ignorer = '.'.IO.add('.gitignore').IO.f
-             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*', :git-ignore)
-             !! parse('.git/*', '.precomp', 'sdist/*');
-             
-  my @manifest = ls('.'.IO, -> $fn {
-    $ignorer.rmatch($fn.Str)
-  });
-
-  return @manifest if $dry-run;
-
+method bundle($location, @manifest, Bool :$dry-run = False) {
   my ($rc, $out, $err) = run-p('PAX', 'pax', '-w', '-z', '-s', '#^#dist/#', '-f', $location, |@manifest,
                                :ENV(|%*ENV, COPYFILE_DISABLE => 'bad_apple_no_cookie_for_you'),
                               );

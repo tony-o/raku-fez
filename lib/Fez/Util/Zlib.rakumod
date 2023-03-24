@@ -1,6 +1,7 @@
 unit module Fez::Util::Zlib;
 
 use NativeCall;
+use Fez::Logr;
 
 constant zlib = $*DISTRO.is-win ?? %?RESOURCES<lib/z.dll>.absolute !! 'z', v1;
 
@@ -14,43 +15,57 @@ constant z-mem-err     = -4;
 constant z-buf-err     = -5;
 constant z-version-err = -6;
 
-sub compress-bound(ulong --> ulong)
-  is native(zlib) is symbol('compressBound') { * };
+sub gzopen(Str, Str --> Pointer) is native(zlib) { * };
+sub gzwrite(Pointer, Buf[uint8], int32 --> int32) is native(zlib) { * };
+sub gzclose(Pointer --> int32) is native(zlib) { * };
+sub gzerror(Pointer, CArray[int32] --> Str) is native(zlib) { * };
+sub gzread(Pointer, Buf[uint8], int32 --> int32) is native(zlib) { * };
+
 sub uncompress(Buf[uint8], CArray[ulong], Buf[uint8], ulong --> int32)
-  is native(zlib) { * };
-sub compress2(Buf[uint8], CArray[ulong], Buf[uint8], ulong, int32 --> int32)
   is native(zlib) { * };
 
 sub cmprs(Str:D $fn, $data) is export {
   my Buf[uint8] $out  .= new;
-  my ulong $dlen       = compress-bound($data.bytes);
+  my ulong $dlen       = $data.bytes;
   $out[$dlen] = 0;
 
-  my $rc = compress2($out, CArray[ulong].new($dlen), $data, $data.bytes, 9);
+  log(DEBUG, 'zlib: opening %s for writing', $fn);
+  my $file = gzopen($fn, 'wb');
+  
+  my $rc = gzwrite($file, $data, $data.bytes);
+  my CArray[int32] $u .= new;
+  $u[0] = 0;
+  my $err = gzerror($file, $u);
+  gzclose($file);
 
-  die "Failed to compress {$rc}" unless $rc == z-ok;
-
-  $fn.IO.spurt($out, :bin);
+  if $rc == 0 {
+    log(FATAL, 'zlib: %s', $err);
+  }
 }
 
 sub dcmprs(Str:D $fn) is export {
   my Buf[uint8] $in    = $fn.IO.slurp(:bin);
   my Buf[uint8] $out  .= new;
-  my ulong      $dlen  = 1024; # double until !buf-err && !ok
-  my $rc = z-buf-err;
+  my Buf[uint8] $read .= new;
+  $read[5120] = 0;
+
+  log(DEBUG, 'zlib: opening %s for reading', $fn);
+  my $file = gzopen($fn, 'rb');
   
-  while $rc ~~ z-buf-err {
-    $out[$dlen] = 0;
-    $rc = uncompress($out, CArray[ulong].new($dlen), $in, $in.bytes); 
-    $dlen += $dlen if $rc != z-ok;
+  my $rc = gzread($file, $read, 5120);
+  while $rc == 5120 {
+    $out.push($read.subbuf(0, $rc));
+    $rc = gzread($file, $read, 5120);
   }
-
-  die "Failed to decompress {$rc}" unless $rc == z-ok;
-
-  my $blen = $out.bytes-1;
-  while $blen > 0 && $out[$blen-1] == 0x0 {
-    $blen--;
+  my CArray[int32] $u .= new;
+  $u[0] = 0;
+  my $err = gzerror($file, $u);
+  gzclose($file);
+  
+  if $rc == -1 {
+    log(ERROR, 'zlib: %s', $err);
+    die;
   }
-
-  $out.subbuf(0, $blen);
+  $out.push($read.subbuf(0, $rc));
+  $out;
 }
