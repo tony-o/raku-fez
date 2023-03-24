@@ -667,15 +667,15 @@ multi MAIN('plugin', Bool :a($all) = False) is export {
   my @keys = $all ?? $user-config.keys.sort !! @base.grep({ $user-config{$_}.defined && +($user-config{$_}) });
   log(MSG, 'User config: %s', user-config-path) if +@keys;
   for @keys -> $k {
-    say ">>=   $k: ";
-    say ">>=     {$user-config{$k}.join("\n>>=     ")}";
+    log(MSG, '   %s:', $k);
+    log(MSG, '     %s', $user-config{$k});
   }
   my $env-config = env-config;
   @keys = $all ?? $env-config.keys.sort !! @base.grep({ $env-config{$_}.defined && +($env-config{$_}) });
   log(MSG, 'Environment config: %s', env-config-path) if +@keys;
   for @keys -> $k {
-    say ">>=   $k: ";
-    say ">>=     {$env-config{$k}.join("\n>>=     ")}";
+    log(MSG, '   %s:', $k);
+    log(MSG, '     %s', $env-config{$k}.join("\n     "));
   }
 }
 
