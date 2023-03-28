@@ -17,11 +17,11 @@ constant %spesh = {'.'=>1, '+'=>1, '*'=>1,
 
 multi sub parse(*@lines, Bool :$git-ignore = False) is export {
   my @patterns = @lines
+    .map({ parse($_, :want-re, :$git-ignore) })
+    .grep(*.defined && * !~~ Empty)
     .map({
-      my $re = parse($_, :want-re, :$git-ignore);
-      try rx/ <$re> /;
+      try rx/ <$_> /;
     })
-    .grep(*.defined)
     .list;
   die 'No suitable patterns found for filtering' unless +@patterns;
   globbalizer.new(
@@ -30,7 +30,7 @@ multi sub parse(*@lines, Bool :$git-ignore = False) is export {
 }
 
 multi sub parse(Str:D $line, Bool :$git-ignore = False, Bool :$want-re = False) is export {
-  return Empty if $line.trim.starts-with('#');
+  return Empty if $line.trim.starts-with('#') || $line.trim.chars == 0;
   my Str $re = '';
   my @parts = $line.split('', :skip-empty);
   my $i = 0;

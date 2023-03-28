@@ -244,7 +244,7 @@ multi MAIN('login') is export {
   log(MSG, 'Login successful, you can now upload dists');
 }
 
-multi MAIN('checkbuild', Str :f($file) = '', Bool :a($auth-mismatch-error) = False, Bool :d($development) = False) is export {
+multi MAIN('checkbuild', Str :f(:$file) = '', Bool :a(:$auth-mismatch-error) = False, Bool :d(:$development) = False) is export {
   my $skip-meta;
   my $root = '.';
   my $sep = '.'.IO.SPEC.dir-sep;
@@ -409,10 +409,10 @@ multi MAIN('checkbuild', Str :f($file) = '', Bool :a($auth-mismatch-error) = Fal
   True;
 }
 
-multi MAIN('m', Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
+multi MAIN('m', Str :n(:$name) is copy, Str :w(:$website) is copy, Str :e(:$email) is copy) is export {
   MAIN('meta', :$name, :$website, :$email);
 }
-multi MAIN('meta', Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
+multi MAIN('meta', Str :n(:$name) is copy, Str :w(:$website) is copy, Str :e(:$email) is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
     log(ERROR, 'You must login to change your info');
@@ -484,10 +484,10 @@ multi MAIN('org', 'list') is export {
   }
 }
 
-multi MAIN('o', 'meta', Str $org-name, Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
+multi MAIN('o', 'meta', Str $org-name, Str :n(:$name) is copy, Str :w(:$website) is copy, Str :e(:$email) is copy) is export {
   MAIN('o', 'meta', $org-name, :$name, :$website, :$email);
 }
-multi MAIN('org', 'meta', Str $org-name, Str :n($name) is copy, Str :w($website) is copy, Str :e($email) is copy) is export {
+multi MAIN('org', 'meta', Str $org-name, Str :n(:$name) is copy, Str :w(:$website) is copy, Str :e(:$email) is copy) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
     log(FATAL, 'You must login to change your org\'s info');
@@ -526,10 +526,10 @@ multi MAIN('org', 'meta', Str $org-name, Str :n($name) is copy, Str :w($website)
   log(MSG, '%s\'s meta info has been updated', $org-name);
 }
 
-multi MAIN('up', Str :i($file) = '', Bool :d($dry-run) = False, Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
+multi MAIN('up', Str :i(:$file) = '', Bool :d(:$dry-run) = False, Bool :s(:$save-autobundle) = False, Bool :f(:$force) = False) is export {
   MAIN('upload', :i($file), :s($save-autobundle), :f($force));
 }
-multi MAIN('upload', Str :i($file) = '', Bool :d($dry-run) = False,  Bool :s($save-autobundle) = False, Bool :f($force) = False) is export {
+multi MAIN('upload', Str :i(:$file) = '', Bool :d(:$dry-run) = False,  Bool :s(:$save-autobundle) = False, Bool :f(:$force) = False) is export {
   MAIN('login') unless config-value('key');
   if ! (config-value('key')//0) {
     log(FATAL, 'You must login to upload');
@@ -658,10 +658,10 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
   log(FATAL, 'Error processing request');
 }
 
-multi MAIN('p', Bool :a($all) = False) is export {
+multi MAIN('p', Bool :a(:$all) = False) is export {
   MAIN('plugin', :a($all));
 }
-multi MAIN('plugin', Bool :a($all) = False) is export {
+multi MAIN('plugin', Bool :a(:$all) = False) is export {
   my @base = qw<bundlers requestors>;
   my $user-config = user-config;
   my @keys = $all ?? $user-config.keys.sort !! @base.grep({ $user-config{$_}.defined && +($user-config{$_}) });
@@ -704,25 +704,30 @@ multi MAIN(Bool :h(:$help)?) is export {
 }
 
 multi USAGE is export {
-  my @keys = |@*ARGS.grep({!$_.starts-with('-')});
-  my $rx   = @keys.join('<-[_]>*_') ~ '<-[_]>*';
-  my @usage = $?DISTRIBUTION.meta<resources>.grep({$_ ~~ rx/ <$rx> /});
-  if +@usage > 1 {
-    my @options = @usage.map({$_.=substr(6); $_ = S:g/'_'/ / given $_; });
+  my (@usage, $rx);
+  my @keys  = |@*ARGS.grep({!$_.starts-with('-')});
+  my @max-usage;
+  for @keys.combinations.grep(*.elems) -> @combo {
+    $rx   = '\'' ~ @combo.join('\'<-[_]>*_\'') ~ '\'<-[_]>*';
+    @usage = $?DISTRIBUTION.meta<resources>.grep({$_ ~~ rx/ <$rx> /});
+    @max-usage = @usage if +@usage > +@max-usage;
+  }
+  if +@max-usage > 1 {
+    my @options = @max-usage.map({$_.=substr(6); $_ = S:g/'_'/ / given $_; });
     say HELP-HEADER ~ "\n";
     say "Did you mean any of the following?\n  fez {@options.join("\n  fez ")}\n";
-  } elsif +@usage == 1 {
+  } elsif +@max-usage == 1 {
     say HELP-HEADER ~ "\n";
-    say %?RESOURCES{@usage[0]}.slurp;
+    say %?RESOURCES{@max-usage[0]}.slurp;
   } else {
     MAIN(:help);
   }
 }
 
-multi MAIN('ref', Bool:D :d($dry-run) = False) is export {
+multi MAIN('ref', Bool:D :d(:$dry-run) = False) is export {
   MAIN('refresh', :d($dry-run));
 }
-multi MAIN('refresh', Bool:D :d($dry-run) = False) is export {
+multi MAIN('refresh', Bool:D :d(:$dry-run) = False) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
   log(DEBUG, "found META6.json in {$cwd.relative}");
@@ -848,10 +853,10 @@ multi MAIN('init', Str $module is copy = '') is export {
   EOF
 }
 
-multi MAIN('dep', Str:D $dist, Bool :$build = False) is export {
+multi MAIN('dep', Str:D $dist, Bool :b(:$build) = False) is export {
   MAIN('depends', $dist, :$build);
 }
-multi MAIN('depends', Str:D $dist, Bool :$build = False) is export {
+multi MAIN('depends', Str:D $dist, Bool :b(:$build) = False) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
   log(DEBUG, "found META6.json in {$cwd.relative}");
@@ -893,10 +898,10 @@ multi MAIN('command') is export {
   }
 }
 
-multi MAIN('r', Str:D $command, :t($timeout) is copy = 300) is export {
+multi MAIN('r', Str:D $command, :t(:$timeout) is copy = 300) is export {
   MAIN('run', $command, :t($timeout));
 }
-multi MAIN('run', Str:D $command, :t($timeout) is copy = 300) is export {
+multi MAIN('run', Str:D $command, :t(:$timeout) is copy = 300) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
 
