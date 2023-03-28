@@ -66,8 +66,9 @@
     "usage/review",
     "usage/run",
     "usage/upload",
-    "usage/version"
+    "usage/version",
+    "usage/module"
   ],
   "source-url": "https://github.com/tony-o/raku-fez.git",
-  "version": "45"
+  "version": "46"
 }

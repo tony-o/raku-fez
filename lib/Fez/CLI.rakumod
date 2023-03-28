@@ -823,11 +823,15 @@ multi MAIN(Bool :h(:$help)?) is export {
 multi USAGE is export {
   my (@usage, $rx);
   my @keys  = |@*ARGS.grep({!$_.starts-with('-')});
-  my @max-usage;
-  for @keys.combinations.grep(*.elems) -> @combo {
-    $rx   = '\'' ~ @combo.join('\'<-[_]>*_\'') ~ '\'<-[_]>*';
-    @usage = $?DISTRIBUTION.meta<resources>.grep({$_ ~~ rx/ <$rx> /});
-    @max-usage = @usage if +@usage > +@max-usage;
+  my @max-usage = @keys.elems == 1
+               ?? $?DISTRIBUTION.meta<resources>.grep({$_ eq @keys[0]}).first//()
+               !! ();
+  if @max-usage == 0 {
+    for @keys.combinations.grep(*.elems) -> @combo {
+      $rx   = '\'' ~ @combo.join('\'<-[_]>*_\'') ~ '\'<-[_]>*';
+      @usage = $?DISTRIBUTION.meta<resources>.grep({$_ ~~ rx/ <$rx> /});
+      @max-usage = @usage if +@usage > +@max-usage;
+    }
   }
   if +@max-usage > 1 {
     my @options = @max-usage.map({$_.=substr(6); $_ = S:g/'_'/ / given $_; });
@@ -1001,6 +1005,35 @@ multi MAIN('init', Str $module is copy = '') is export {
   EOF
 }
 
+multi MAIN('mod', Str:D $mod, Bool:D :c(:$class) = False) is export {
+  MAIN('module', $mod, :$class);
+}
+
+multi MAIN('module', Str:D $mod, Bool:D :c(:$class) = False) is export {
+  my $cwd = upcurse-meta();
+  log(FATAL, 'could not find META6.json') unless $cwd;
+  log(DEBUG, "found META6.json in {$cwd.relative}");
+  my %meta = from-j($cwd.add('META6.json').slurp);
+  if %meta<provides>{$mod}:exists {
+    log(FATAL, '%s already exists in provides', $mod);
+  }
+  my @module-parts = $mod.split('::', :skip-empty);
+  my $module-file  = @module-parts.pop ~ ".rakumod";
+  my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
+  
+  my $root = $cwd.add('lib');
+  while @module-parts.elems {
+    $root := $root.add(@module-parts.shift);
+    dd 'mking: ' ~ $root.absolute;
+    mkdir $root.absolute;
+  }
+
+  $module-path.spurt("unit {$class??'class'!!'module'} $mod;\n");
+  %meta<provides>{$mod} = $module-path.relative($cwd);
+  
+  $cwd.add('META6.json').spurt(to-j(%meta));
+} 
+
 multi MAIN('dep', Str:D $dist, Bool :b(:$build) = False) is export {
   MAIN('depends', $dist, :$build);
 }
@@ -1113,6 +1146,7 @@ multi MAIN('resource', Str:D $path is copy) is export {
     }
   };
 
+  mkdir($resource-dir) unless $resource-dir.d;
   if $resource-dir.add($path).e {
     log(MSG, 'Resource exists - not creating any directories or files');
     ensure-resource-in-meta;
