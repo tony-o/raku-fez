@@ -275,27 +275,30 @@ multi MAIN('review', Bool:D :d(:$dist) = False) is export {
           !! %findings<meta>{$key}.Set;
     $right = %findings<new-meta>{$key} ~~ Hash
           ?? %findings<new-meta>{$key}.keys.Set
-          !! %findings<meta>{$key}.Set;
-    $ignores = $repo-cfg{"ignore-{$key}"}//Set.new;
+          !! %findings<new-meta>{$key}.Set;
+    $ignores = Set.new('NativeCall', 'Test', 'nqp', |$repo-cfg{"ignore-{$key}"}//Set.new);
     $l-diff  = ($left (-) $right) (-) $ignores;
     $r-diff  = ($right (-) $left) (-) $ignores;
 
     $ok = $l-diff.elems == 0 && $r-diff.elems == 0;
 
-    $has-error ||= $ok;
+    $has-error ||= !$ok;
 
     log(MSG, "%s%s ok", $k, $ok??''!!' not');
     if !$ok {
-      log(MSG,
-          "  in lib/ but not in meta:\n    %s",
-          $r-diff.keys.map({sprintf '%s (%s)', $_, %findings<new-meta>{$key}{$_}})
-            .join("\n    ")
-      ) if $r-diff.elems;
-      log(MSG,
-          "  in meta but not in lib/:\n    %s",
-          $l-diff.keys.map({sprintf '%s (%s)', $_, %findings<meta>{$key}{$_}})
-            .join("\n    ")
-      ) if $l-diff.elems;
+      my $str = $r-diff
+        .keys
+        .map({sprintf '%s', $_})
+        .join("\n    ");
+
+      log(MSG,"  not in meta:\n    %s",  $str) if $r-diff.elems;
+
+      $str = $l-diff
+        .keys
+        .map({sprintf '%s', $_})
+        .join("\n    ");
+
+      log(MSG, "  in meta but unexpected:\n    %s", $str) if $l-diff.elems;
     }
   }
   log(WARN, '`.rakumod` should be used for module extensions, not `.pm6`')
@@ -311,21 +314,25 @@ multi MAIN('review', Bool:D :d(:$dist) = False) is export {
          !! %findings<meta><vers>
          ?? 'vers'
          !! 'version';
+  if $ver ne 'version' {
+    log(ERROR, '"version" is the correct version specifier to use (found:%s)', $ver);
+    $has-error = True;
+  }
   unless %findings<meta><name>//False {
     log(ERROR, 'name should be a value');
-    $has-error ||= True;
+    $has-error = True;
   }
   if (%findings<meta>{$ver}//'') eq '' {
     log(ERROR, 'ver should not be nil', 2);
-    $has-error ||= True;
+    $has-error = True;
   }
   unless %findings<meta><auth>//False {
     log(ERROR, 'auth should not be nil', 3);
-    $has-error ||= True;
+    $has-error = True;
   }
   if %findings<meta>{$ver}.trim eq '*' {
     log(ERROR, 'ver cannot be "*"', 5);
-    $has-error ||= True;
+    $has-error = True;
   }
   my @group-auths = (config-value('groups')//[]).map({"zef:{$_<group>}"});
   @group-auths.push("zef:{config-value('un')}") if config-value('un');
@@ -336,7 +343,7 @@ multi MAIN('review', Bool:D :d(:$dist) = False) is export {
       @group-auths.raku,
       %findings<meta><auth>, 
     );
-    $has-error ||= True;
+    $has-error = True;
   }
 
   exit 1 if $has-error && !($*DIST//False);
@@ -842,6 +849,13 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
   
+  my $repo-cfg  = $cwd.add('.zef').f
+               ?? (try {
+                 CATCH { default { log(FATAL, 'error reading .zef: %s', $_); } };
+                 from-j($cwd.add('.zef').slurp)
+               })
+               !! {};
+
   log(DEBUG, "scanning files in {$cwd.add('lib').relative}");
   my @files = ls($cwd.add('lib'), -> $f { 
     $f.basename.ends-with('.rakumod') || $f.d || $f.basename.ends-with('.pm6');
@@ -856,7 +870,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
     for $fc.lines -> $ln {
       if my $m = $ln ~~ m:g/^ \s* 'use' \s+ $<use-stmt>=(<-[\s;:]>+ % '::')+ <-[\n]>*?';' / {
         my $match-str = "{$m[0]<use-stmt>.join.Str}";
-        if $match-str !~~ 'Test'|'NativeCall'|'nqp' {
+        if $match-str !~~ any('Test'|'NativeCall'|'nqp') {
           %rsult<use>{$match-str}.push: $fn;
           log(DEBUG, '[%s]: uses: %s', $fn, $match-str);
         }
@@ -873,6 +887,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
       }
       if $m = $ln ~~ m:g/^\s*class\s+$<cls-stmt>=(<-[\s:;]>+ % '::')+ <-[\n]>*? (';'|'{') / {
         my $cls = $m[0]<cls-stmt>.join.Str.trim;
+        next if $cls ~~ any(|($repo-cfg<ignore-provides>//[]));
         %rsult<provides>{$cls}.push: $fn;
         %findings<provides>.push: $fn;
         log(DEBUG, '[%s]: provides: %s', $fn, $cls);
@@ -906,9 +921,9 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
 
   my %meta = from-j($cwd.add('META6.json').slurp);
   %findings<meta>  = %(|%meta.clone);
-  %meta<depends>   = %rsult<depends>.keys.sort;
+  %meta<depends>   = %rsult<depends>.keys.sort.Array;
   %meta<provides>  = %rsult<provides>.keys.sort.map({$_ => %rsult<provides>{$_}.first}).hash;
-  %meta<resources> = @rsrcs.sort;
+  %meta<resources> = @rsrcs.sort.Array;
 
   %findings<new-meta> = %meta;
   %findings<ignorer>  = $ignorer;

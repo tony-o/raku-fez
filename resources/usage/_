@@ -21,6 +21,8 @@ COMMANDS
 
   RELEASE MANAGEMENT
 
+    review                goes through the current directory to find any errors
+                          that might be lurking upon upload
     register              registers you up for a new account
     login                 logs you in and saves your key info
     upload                creates a distribution tarball and uploads
