@@ -1024,7 +1024,6 @@ multi MAIN('module', Str:D $mod, Bool:D :c(:$class) = False) is export {
   my $root = $cwd.add('lib');
   while @module-parts.elems {
     $root := $root.add(@module-parts.shift);
-    dd 'mking: ' ~ $root.absolute;
     mkdir $root.absolute;
   }
 
