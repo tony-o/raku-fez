@@ -1,4 +1,4 @@
-unit module TAR;
+unit module Fez::Util::RTar;
 
 sub tar(*@fs, Str :$prefix = '' --> Buf[uint8]) is export {
   my Buf[uint8] $tar .=new;

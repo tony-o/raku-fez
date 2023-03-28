@@ -244,7 +244,108 @@ multi MAIN('login') is export {
   log(MSG, 'Login successful, you can now upload dists');
 }
 
+multi MAIN('rev', Bool:D :d(:$dist) = False) is export {
+  MAIN('review', :$dist);
+}
+multi MAIN('review', Bool:D :d(:$dist) = False) is export {
+  my $has-error = False;
+  my %findings  = MAIN('ref', :d, :q);
+  my @manifest  = ls(%findings<meta-dir>, -> $t { %findings<ignorer>.rmatch($t.relative) })
+      .sort({ $^a.lc cmp $^b.lc });
+  my $repo-cfg  = %findings<meta-dir>.add('.zef').f
+               ?? (try {
+                 CATCH { default { log(FATAL, 'error reading .zef: %s', $_); } };
+                 from-j(%findings<meta-dir>.add('.zef').slurp)
+               })
+               !! {};
+
+  log(MSG, "Bundle manifest:\n  %s", @manifest.join("\n  "));
+
+  my %metas = (
+    'Depends'       => 'depends',
+    'Provides'      => 'provides',
+    'Build depends' => 'build-depends',
+    'Resources'     => 'resources',
+  );
+  my ($ok, $key, $left, $right, $l-diff, $r-diff, $ignores);
+  for %metas.keys.sort -> $k {
+    $key = %metas{$k};
+    $left  = %findings<meta>{$key} ~~ Hash
+          ?? %findings<meta>{$key}.keys.Set
+          !! %findings<meta>{$key}.Set;
+    $right = %findings<new-meta>{$key} ~~ Hash
+          ?? %findings<new-meta>{$key}.keys.Set
+          !! %findings<meta>{$key}.Set;
+    $ignores = $repo-cfg{"ignore-{$key}"}//Set.new;
+    $l-diff  = ($left (-) $right) (-) $ignores;
+    $r-diff  = ($right (-) $left) (-) $ignores;
+
+    $ok = $l-diff.elems == 0 && $r-diff.elems == 0;
+
+    $has-error ||= $ok;
+
+    log(MSG, "%s%s ok", $k, $ok??''!!' not');
+    if !$ok {
+      log(MSG,
+          "  in lib/ but not in meta:\n    %s",
+          $r-diff.keys.map({sprintf '%s (%s)', $_, %findings<new-meta>{$key}{$_}})
+            .join("\n    ")
+      ) if $r-diff.elems;
+      log(MSG,
+          "  in meta but not in lib/:\n    %s",
+          $l-diff.keys.map({sprintf '%s (%s)', $_, %findings<meta>{$key}{$_}})
+            .join("\n    ")
+      ) if $l-diff.elems;
+    }
+  }
+  log(WARN, '`.rakumod` should be used for module extensions, not `.pm6`')
+    if %findings<modfiles>.grep({ $_.ends-with('.pm6') });
+  
+  if !(%findings<meta><production>//True).so && $dist {
+    log(ERROR, 'production in META is set to false');
+    $has-error = True;
+  }
+
+  my $ver = %findings<meta><ver>
+         ?? 'ver'
+         !! %findings<meta><vers>
+         ?? 'vers'
+         !! 'version';
+  unless %findings<meta><name>//False {
+    log(ERROR, 'name should be a value');
+    $has-error ||= True;
+  }
+  if (%findings<meta>{$ver}//'') eq '' {
+    log(ERROR, 'ver should not be nil', 2);
+    $has-error ||= True;
+  }
+  unless %findings<meta><auth>//False {
+    log(ERROR, 'auth should not be nil', 3);
+    $has-error ||= True;
+  }
+  if %findings<meta>{$ver}.trim eq '*' {
+    log(ERROR, 'ver cannot be "*"', 5);
+    $has-error ||= True;
+  }
+  my @group-auths = (config-value('groups')//[]).map({"zef:{$_<group>}"});
+  @group-auths.push("zef:{config-value('un')}") if config-value('un');
+  unless %findings<meta><auth> ~~ any(@group-auths) {
+    log(
+      ERROR,
+      "auth does not match logged in user or user's groups\n  expected: %s\n  got: %s",
+      @group-auths.raku,
+      %findings<meta><auth>, 
+    );
+    $has-error ||= True;
+  }
+
+  exit 1 if $has-error && !($*DIST//False);
+
+  $has-error;
+}
+
 multi MAIN('checkbuild', Str :f(:$file) = '', Bool :a(:$auth-mismatch-error) = False, Bool :d(:$development) = False) is export {
+  log(ERROR, '`fez checkbuild ...` is deprecated and will be removed in v49, please use `fez review`');
   my $skip-meta;
   my $root = '.';
   my $sep = '.'.IO.SPEC.dir-sep;
@@ -534,22 +635,31 @@ multi MAIN('upload', Str :i(:$file) = '', Bool :d(:$dry-run) = False,  Bool :s(:
   if ! (config-value('key')//0) {
     log(FATAL, 'You must login to upload');
   }
-  my $fn;
+  my $fn = $file;
   try {
-    CATCH { default { printf "=<< ERROR: %s\n", .message; exit 255; } }
-    $fn = $file || bundle('.'.IO.absolute);
-    if '' ne $file && ! $file.IO.f {
+    CATCH { default { log(FATAL, 'Bundling error: %s', .message); } }
+    if !$file {
+      our $*DIST = True;
+      my $has-error = MAIN('review', :dist);
+      if $has-error && !$force {
+        my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
+        if $resp.lc ~~ any('n'|'no'|'') {
+          log(FATAL, 'Ok, exiting');
+        }
+      }
+      $fn = bundle('.'.IO.absolute);
+    } elsif ! $file.IO.f {
       log(FATAL, 'Cannot find %s', $file);
-    }
-  };
-  if !$force {
-    if !so MAIN('checkbuild', :f($fn.IO.absolute), :a) {
-      my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
-      if $resp.lc ~~ any('n'|'no'|'') {
-        log(FATAL, 'Ok, exiting');
+    } else {
+      if !$force && !so(MAIN('checkbuild', :f($fn.IO.absolute), :a)) {
+        log(WARN, 'Fez will remove support for checkbuild in v49, this means that providing your own dist file for upload will stop checking for errors');
+        my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
+        if $resp.lc ~~ any('n'|'no'|'') {
+          log(FATAL, 'Ok, exiting');
+        }
       }
     }
-  }
+  };
 
   if $dry-run {
     log(INFO, 'Exiting now because --dry-run (or -d) was supplied');
@@ -724,19 +834,20 @@ multi USAGE is export {
   }
 }
 
-multi MAIN('ref', Bool:D :d(:$dry-run) = False) is export {
-  MAIN('refresh', :d($dry-run));
+multi MAIN('ref', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is export {
+  MAIN('refresh', :$dry-run, :$quiet);
 }
-multi MAIN('refresh', Bool:D :d(:$dry-run) = False) is export {
+multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is export {
+  my %findings;
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
-  log(DEBUG, "found META6.json in {$cwd.relative}");
   
   log(DEBUG, "scanning files in {$cwd.add('lib').relative}");
   my @files = ls($cwd.add('lib'), -> $f { 
-    $f.basename ~~ m/'.'['pm6'|'rakumod']$/;
+    $f.basename.ends-with('.rakumod') || $f.d || $f.basename.ends-with('.pm6');
   });
-  log(DEBUG, @files.join("\n"));
+  log(DEBUG, "manifest:\n  %s", @files.join("\n  "));
+  %findings<modfiles> = @files;
 
   log(DEBUG, 'looking for modules/classes in those files');
   my %rsult = :use({}), :provides({}), :depends({}), :lib-files({});
@@ -754,39 +865,61 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False) is export {
         if $m.Str ~~ m:g/(^\s* 'unit')|(\s+'is export'(\s+|';'|'{'))/ {
           my $match-str = $m[0]<mod-stmt>.join.Str.trim;
           %rsult<provides>{$match-str}.push: $fn;
+          %findings<provides>.push: $fn;
           log(DEBUG, '[%s]: provides: %s', $fn, $match-str);
         } else {
           log(DEBUG, '[%s]: %s missing unit or is export, skipping', $fn, $m.Str);
         }
       }
+      if $m = $ln ~~ m:g/^\s*class\s+$<cls-stmt>=(<-[\s:;]>+ % '::')+ <-[\n]>*? (';'|'{') / {
+        my $cls = $m[0]<cls-stmt>.join.Str.trim;
+        %rsult<provides>{$cls}.push: $fn;
+        %findings<provides>.push: $fn;
+        log(DEBUG, '[%s]: provides: %s', $fn, $cls);
+      }
     }
   });
 
   %rsult<use>.keys.map({ %rsult<depends>{$_}.push(|%rsult<use>{$_}) unless %rsult<provides>{$_}:exists; });
+  %findings<use> = %rsult<use>;
 
   for %rsult.keys.sort -> $k {
-    log(DEBUG, "%s:\n%s", $k, %rsult{$k}.keys.sort.map({ "  $_ => [{%rsult{$k}{$_}.join(", ")}]" }).join("\n"));
+    log(DEBUG,
+      "%s:\n%s",
+      $k,
+      %rsult{$k}
+        .keys
+        .sort
+        .map({ "  $_ => [{%rsult{$k}{$_}.join(", ")}]" })
+        .join("\n"));
   }
 
   my $ignorer = $cwd.add('.gitignore').e
-             ?? parse(|$cwd.IO.add('.gitignore').IO.slurp.lines)
-             !! Any;
+             ?? parse(|$cwd.IO.add('.gitignore').IO.slurp.lines, '.git', :git-ignore)
+             !! parse('**/.precomp', '**.swp', '.git');
   
   my @rsrcs = $cwd.add('resources').d
     ?? ls($cwd.add('resources'), -> $f { True })
-         .grep({ Any ~~ $ignorer || $ignorer.rmatch($_) })
+         .grep({ $ignorer.rmatch($_) })
          .map({ S/^ 'resources' [\/|\\] // given $_; })
     !! ();
 
   my %meta = from-j($cwd.add('META6.json').slurp);
-  %meta<depends> = %rsult<depends>.keys.sort;
-  %meta<provides> = %rsult<provides>.keys.sort.map({$_ => %rsult<provides>{$_}.first}).hash;
+  %findings<meta>  = %(|%meta.clone);
+  %meta<depends>   = %rsult<depends>.keys.sort;
+  %meta<provides>  = %rsult<provides>.keys.sort.map({$_ => %rsult<provides>{$_}.first}).hash;
   %meta<resources> = @rsrcs.sort;
+
+  %findings<new-meta> = %meta;
+  %findings<ignorer>  = $ignorer;
+  %findings<meta-dir> = $cwd;
 
   log(DEBUG, to-j(%meta));
 
-  printf "%s\n", to-j(%meta) if $dry-run;
+  printf "%s\n", to-j(%meta) if $dry-run && !$quiet;
   $cwd.add('META6.json').spurt(to-j(%meta)) unless $dry-run;
+
+  %findings;
 }
 
 multi MAIN('in', Str $module is copy = '') is export {
