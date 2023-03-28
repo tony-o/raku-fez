@@ -61,12 +61,16 @@ my %tests = (
   '/{static,build/public}/*.js' => (qw</static/file.js /build/public/file.js>, @test[3]),
 );
 
-plan 1+%tests.keys.elems;
+plan 2+%tests.keys.elems;
 
 %tests.keys.sort.map({t("$_", %tests{$_}[1], %tests{$_}[0])});
 
 # test list
 my @tl = qw<A.png B.png C.png a/A.png b/A.png b/b.png>;
 ok e(qw<A.png B.png C.png b/A.png>, parse(qw<*.png b/[A-Z]*>).filter(@tl)), 'multi parse handles array of glob patterns';
+
+# git ignore style
+@tl = qw<META6.json lib/.precomp/abc lib/A.rakumod .precomp/123 t/00-use.t t/.precomp>;
+ok e(qw<META6.json lib/A.rakumod t/00-use.t>, parse(qw<.precomp/>, :git-ignore).rfilter(@tl)), 'git ignore parse ignores subds';
 
 # vi:syntax=raku
