@@ -16,8 +16,16 @@ constant %spesh = {'.'=>1, '+'=>1, '*'=>1,
                    '!'=>1, '\\'=>1, '~'=>1};
 
 multi sub parse(*@lines, Bool :$git-ignore = False) is export {
+  my @patterns = @lines
+    .map({
+      my $re = parse($_, :want-re, :$git-ignore);
+      try rx/ <$re> /;
+    })
+    .grep(*.defined)
+    .list;
+  die 'No suitable patterns found for filtering' unless +@patterns;
   globbalizer.new(
-    :patterns(@lines.map({my $re = parse($_, :want-re, :$git-ignore); rx/ <$re> /;}).list),
+    :@patterns,
   );
 }
 
@@ -101,16 +109,19 @@ multi sub parse(Str:D $line, Bool :$git-ignore = False, Bool :$want-re = False) 
     }
     $i++;
   }
-  # "DEBUG: $line -> $re\n".say;
   if $git-ignore {
-    if $line.contains('/') {
-      $re = "^{$re}\$";
+    if $line.starts-with('/') {
+      $re = "^{$re}";
     } else {
-      $re = "{$re}\$";
+      $re = "{$re}";
     }
   } else {
     $re = "^{$re}\$";
   }
+  if $re.ends-with('/') {
+    $re = "{$re.substr(0, *-2)}(\\/|\$)";
+  }
+  # "DEBUG: $line -> $re\n".say;
   return $re if $want-re;
-  globbalizer.new(:patterns( rx/^ <$re> $/ ));
+  globbalizer.new(:patterns( rx/ <$re> / ));
 }
