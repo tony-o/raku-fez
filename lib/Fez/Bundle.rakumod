@@ -1,7 +1,9 @@
 unit module Fez::Bundle;
 
+use Fez::Logr;
 use Fez::Util::Json;
 use Fez::Util::FS;
+use Fez::Util::Glob;
 
 my $CONFIG = from-j(%?RESOURCES<config.json>.IO.slurp);
 my @chandlers = |$CONFIG<bundlers>; 
@@ -31,11 +33,27 @@ sub bundle($target, :$dry-run = False) is export {
 
   my $location = $sdist.add($io);
   
+  my $ignorer = '.'.IO.add('.gitignore').IO.f
+             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*', :git-ignore)
+             !! parse('.git/*', '.precomp', 'sdist/*');
+             
+  my @manifest = ls('.'.IO, -> $fn {
+    $ignorer.rmatch($fn.Str)
+  });
+
+  return @manifest if $dry-run;
+
+  mkdir('sdist') unless 'sdist'.IO.d.so;
+  
   my ($out, $caught);
   for @handlers -> $handler {
-    CATCH { default { $*IN.print('=<< ' ~ .message ~ "\n"); $caught = True; .resume; } }
+    CATCH { default {
+      log(ERROR, "%s\n%s", .message, .backtrace.Str.lines.map({"  $_"}).join("\n"));
+      $caught = True;
+      .resume;
+    } }
     $caught = False;
-    $out = $handler.bundle($location.absolute, :$dry-run);
+    $out = $handler.bundle($location.absolute, @manifest);
     next if $caught;
     return $location;
   }
@@ -49,5 +67,5 @@ sub cat($target, $file) is export {
 
 sub ls-bundle($target) is export {
   return Failure unless $target.IO.f;
-  @handlers.map({ try $_.ls($target) }).grep(*.defined).first;
+  @handlers.map({ $_.ls($target) }).grep(*.defined).first;
 }

@@ -1,0 +1,19 @@
+USAGE
+
+  VIEW
+
+  fez p [-a]
+  
+  fez plugin [--all]
+
+  MODIFY
+
+  fez p [<key> 'remove|append|prepend' <value>]
+
+  fez plugin [<key> 'remove|append|prepend' <value>]
+
+VIEW:   Lists current plugins and config locations. The optional -a flag
+        displays all data in the meta, including RO fields.
+
+MODIFY: Allows you to modify <key> in the meta without manually editing
+        your local config file.

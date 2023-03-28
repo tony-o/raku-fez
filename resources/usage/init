@@ -1,0 +1,18 @@
+USAGE
+
+  fez in [<module>]
+
+  fez init [<module>]
+
+Initializes a module with a suggested skeleton. <module> is required and
+you will be prompted if no name is given.
+
+<module> should be in the form of 'My::Module'.  This will do the following:
+
+:- Create directories: ./my-module
+                       ./my-module/lib
+                       ./my-module/t
+
+:- Create templates: ./my-module/t/00-usage.rakutest
+                     ./my-module/lib/My/Module.rakumod
+                     ./my-module/META6.json

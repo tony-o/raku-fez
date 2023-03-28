@@ -1,0 +1,11 @@
+USAGE
+
+  fez cmd
+
+  fez command
+
+Lists the commands in the current dist. The commands reside in a file `.zef`
+in the current dist under the key `commands`. If the file doesn't exist then
+a sane default will be created.
+
+To run a command or see help for running a command use `fez run`.

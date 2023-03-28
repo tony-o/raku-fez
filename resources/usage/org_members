@@ -1,0 +1,8 @@
+USAGE
+
+  fez o m <org name>
+
+  fez org members <org name>
+
+Lists the members of <org name>. You are not required to be a member
+of the org to list the members or their roles.

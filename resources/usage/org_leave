@@ -1,0 +1,11 @@
+USAGE
+
+  fez o l <org name>
+
+  fez org leave <org name>
+
+This will allow you to leave an org.
+
+If you're the last admin of that org then you will receive an error.  To
+abandon and org you must first alter your role to `member`.  This is to
+avoid accidentally abandoning your org.

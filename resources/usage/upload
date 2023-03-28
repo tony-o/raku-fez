@@ -1,0 +1,21 @@
+USAGE
+
+  fez up [-idsf]
+
+  fez upload [--file=Str] [--dry-run] [--save-autobundle] [--force]
+
+FLAGS
+
+  OPTIONAL
+
+  -i|--file               path to the file you've prebundled (gzipped tar)
+                          that you'd like to submit to the zef ecosystem
+
+  -d|--dry-run            essentially runs checkbuild
+
+  -s|--save-autobundle    saves the generated .tar.gz in the `sdist/` folder
+
+  -f|--force              skips checking the dist for any obvious errors prior
+                          to submitting
+
+Uploads the current dist to the zef ecosystem.

@@ -1,0 +1,14 @@
+USAGE
+
+  fez r <command> [-t]
+
+  fez run <command> [--timeout=300]
+
+FLAGS
+
+  OPTIONAL
+
+  -t|--timeout            number of seconds the command will be allowed to run
+                          for prior to fez attempting to kill the process.
+
+Runs a command with timeout. Available commands can be shown with `fez command`

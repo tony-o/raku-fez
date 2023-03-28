@@ -1,5 +1,4 @@
-*.swp
+**.swp
 .DS_Store
 .precomp
 sdist/
-resources/lib

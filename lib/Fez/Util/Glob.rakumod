@@ -13,7 +13,7 @@ constant %spesh = {'.'=>1, '+'=>1, '*'=>1,
                    '('=>1, ')'=>1, '['=>1,
                    ']'=>1, '{'=>1, '}'=>1,
                    '|'=>1, '/'=>1, '-'=>1,
-                   '!'=>1, '\\'=>1, '~'=>1};
+                   '!'=>1, '~'=>1, '\\'=>1};
 
 multi sub parse(*@lines, Bool :$git-ignore = False) is export {
   my @patterns = @lines
