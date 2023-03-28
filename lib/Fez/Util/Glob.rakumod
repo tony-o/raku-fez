@@ -23,7 +23,6 @@ multi sub parse(*@lines, Bool :$git-ignore = False) is export {
       try rx/ <$_> /;
     })
     .list;
-  dd @patterns;
   die 'No suitable patterns found for filtering' unless +@patterns;
   globbalizer.new(
     :@patterns,
