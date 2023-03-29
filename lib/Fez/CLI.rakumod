@@ -252,10 +252,10 @@ multi MAIN('review', Bool:D :d(:$dist) = False) is export {
   my %findings  = MAIN('ref', :d, :q);
   my @manifest  = ls(%findings<meta-dir>, -> $t { %findings<ignorer>.rmatch($t.relative) })
       .sort({ $^a.lc cmp $^b.lc });
-  my $repo-cfg  = %findings<meta-dir>.add('.zef').f
+  my $repo-cfg  = %findings<meta-dir>.add('.fez').f
                ?? (try {
                  CATCH { default { log(FATAL, 'error reading .zef: %s', $_); } };
-                 from-j(%findings<meta-dir>.add('.zef').slurp)
+                 from-j(%findings<meta-dir>.add('.fez').slurp)
                })
                !! {};
 
@@ -853,10 +853,10 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
   
-  my $repo-cfg  = $cwd.add('.zef').f
+  my $repo-cfg  = $cwd.add('.fez').f
                ?? (try {
                  CATCH { default { log(FATAL, 'error reading .zef: %s', $_); } };
-                 from-j($cwd.add('.zef').slurp)
+                 from-j($cwd.add('.fez').slurp)
                })
                !! {};
 
@@ -1063,7 +1063,7 @@ multi MAIN('command') is export {
   log(FATAL, 'could not find META6.json') unless $cwd;
   log(DEBUG, "found META6.json in {$cwd.relative}");
 
-  my $dist-cfg = $cwd.add('.zef');
+  my $dist-cfg = $cwd.add('.fez');
 
   $dist-cfg.spurt(to-j({:commands({
     :test(["zef","test","."]),
@@ -1085,7 +1085,7 @@ multi MAIN('run', Str:D $command, :t(:$timeout) is copy = 300) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
 
-  my $dist-cfg = $cwd.add('.zef');
+  my $dist-cfg = $cwd.add('.fez');
 
   $dist-cfg.spurt(to-j({:commands({
     :test(["zef", "test", "."]),
