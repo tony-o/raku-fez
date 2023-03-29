@@ -556,7 +556,7 @@ multi MAIN('meta', Str :n(:$name) is copy, Str :w(:$website) is copy, Str :e(:$e
   }
   $response = Fez::Types::api-response.new(:!success);
   while ! ($response.success//False) {
-    $response = update-meta(config-value('key'), %data<name>, %data<website>, %data<email>);
+    $response = update-meta(config-value('key'), %data<name> // '', %data<website> // '', %data<email> // '');
 
     last if $response.success;
     if ($response.message//'') eq 'expired' {
