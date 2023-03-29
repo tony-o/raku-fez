@@ -26,7 +26,7 @@ sub set-loglevel(LOGLEVEL:D $ll) is export {
 sub s(LOGLEVEL:D $prefix, Str:D $msg, *@args) {
   my $l     = 0;
   my $extra = ll-prefix{$prefix};
-  my $out   = sprintf($msg, |@args).lines.map({($l++ > 0??(' ' x $prefix.chars+$extra.chars+1)!!'')~$_}).join("\n").trim-trailing ~ "\n";
+  my $out   = sprintf($msg, |@args).lines.map({($l++ > 0??(' ' x $prefix.chars+$extra.chars+2)!!'')~$_}).join("\n").trim-trailing ~ "\n";
 
   if $prefix ~~ MSG {
     print ">>= $out";

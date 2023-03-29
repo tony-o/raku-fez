@@ -1,2 +1,0 @@
-{"ignore-provides": ["globbalizer", "auth-response", "IO::Tar", "list-org-response", "api-response", "members-org-response"]
-}

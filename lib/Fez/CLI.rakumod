@@ -244,10 +244,10 @@ multi MAIN('login') is export {
   log(MSG, 'Login successful, you can now upload dists');
 }
 
-multi MAIN('rev', Bool:D :d(:$dist) = False) is export {
+multi MAIN('rev') is export {
   MAIN('review', :$dist);
 }
-multi MAIN('review', Bool:D :d(:$dist) = False) is export {
+multi MAIN('review') is export {
   my $has-error = False;
   my %findings  = MAIN('ref', :d, :q);
   my @manifest  = ls(%findings<meta-dir>, -> $t { %findings<ignorer>.rmatch($t.relative) })
@@ -304,8 +304,16 @@ multi MAIN('review', Bool:D :d(:$dist) = False) is export {
   log(WARN, '`.rakumod` should be used for module extensions, not `.pm6`')
     if %findings<modfiles>.grep({ $_.ends-with('.pm6') });
   
-  if !(%findings<meta><production>//True).so && $dist {
-    log(ERROR, 'production in META is set to false');
+  if %findings<meta><production>:exists {
+    log(WARN,
+        ['"production" in META is deprecated. Please create a .fez file with the json object',
+         '  {"production":%s}',
+         'to continue using this functionality after v53',
+        ].join("\n"),
+        %findings<meta><production> ?? 'true' !! 'false');
+  }
+  if (!$repo-cfg<production>.so || !(%findings<meta><production>//True).so) {
+    log(ERROR, '"production" in project config is set to false');
     $has-error = True;
   }
 
@@ -647,7 +655,7 @@ multi MAIN('upload', Str :i(:$file) = '', Bool :d(:$dry-run) = False,  Bool :s(:
     CATCH { default { log(FATAL, 'Bundling error: %s', .message); } }
     if !$file {
       our $*DIST = True;
-      my $has-error = MAIN('review', :dist);
+      my $has-error = MAIN('review');
       if $has-error && !$force {
         my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
         if $resp.lc ~~ any('n'|'no'|'') {
