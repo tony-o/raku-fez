@@ -47,6 +47,7 @@
     "usage/list",
     "usage/login",
     "usage/meta",
+    "usage/module",
     "usage/org",
     "usage/org_accept",
     "usage/org_create",
@@ -66,8 +67,7 @@
     "usage/review",
     "usage/run",
     "usage/upload",
-    "usage/version",
-    "usage/module"
+    "usage/version"
   ],
   "source-url": "https://github.com/tony-o/raku-fez.git",
   "version": "47"
