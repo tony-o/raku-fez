@@ -245,7 +245,7 @@ multi MAIN('login') is export {
 }
 
 multi MAIN('rev') is export {
-  MAIN('review', :$dist);
+  MAIN('review');
 }
 multi MAIN('review') is export {
   my $has-error = False;
@@ -832,11 +832,11 @@ multi USAGE is export {
   my (@usage, $rx);
   my @keys  = |@*ARGS.grep({!$_.starts-with('-')});
   my @max-usage = @keys.elems == 1
-               ?? $?DISTRIBUTION.meta<resources>.grep({$_ eq @keys[0]}).first//()
+               ?? $?DISTRIBUTION.meta<resources>.grep({"usage/$_" eq @keys[0]}).first//()
                !! ();
   if @max-usage == 0 {
     for @keys.combinations.grep(*.elems) -> @combo {
-      $rx   = '\'' ~ @combo.join('\'<-[_]>*_\'') ~ '\'<-[_]>*';
+      $rx   = '^\'usage/\'.*?\'' ~ @combo.join('\'<-[_]>*_\'') ~ '\'<-[_]>*';
       @usage = $?DISTRIBUTION.meta<resources>.grep({$_ ~~ rx/ <$rx> /});
       @max-usage = @usage if +@usage > +@max-usage;
     }
