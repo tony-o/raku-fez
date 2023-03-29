@@ -18,7 +18,7 @@ constant %spesh = {'.'=>1, '+'=>1, '*'=>1,
 multi sub parse(*@lines, Bool :$git-ignore = False) is export {
   my @patterns = @lines
     .map({ parse($_, :want-re, :$git-ignore) })
-    .grep(*.defined && * !~~ Empty)
+    .grep({.defined && $_ !~~ Empty})
     .map({
       try rx/ <$_> /;
     })
