@@ -1,8 +1,8 @@
 USAGE
 
-  fez rev -d
+  fez rev
 
-  fez review [--dist=False]
+  fez review
 
 Reviews the repository for any errors and displays general information
 about how fez will bundle your repository.

@@ -265,6 +265,7 @@ multi MAIN('review') is export {
     'Depends'       => 'depends',
     'Provides'      => 'provides',
     'Build depends' => 'build-depends',
+    'Test depends'  => 'test-depends',
     'Resources'     => 'resources',
   );
   my ($ok, $key, $left, $right, $l-diff, $r-diff, $ignores);
@@ -357,172 +358,6 @@ multi MAIN('review') is export {
   exit 1 if $has-error && !($*DIST//False);
 
   $has-error;
-}
-
-multi MAIN('checkbuild', Str :f(:$file) = '', Bool :a(:$auth-mismatch-error) = False, Bool :d(:$development) = False) is export {
-  log(ERROR, '`fez checkbuild ...` is deprecated and will be removed in v49, please use `fez review`');
-  my $skip-meta;
-  my $root = '.';
-  my $sep = '.'.IO.SPEC.dir-sep;
-  my $meta = try {
-    CATCH { default { .rethrow; } }
-    if $file eq '' {
-      log(MSG, 'Inspecting ./META6.json');
-      from-j('./META6.json'.IO.slurp);
-    } else {
-      log(MSG, 'Looking in %s for META6.json', $file.IO.resolve.relative);
-      my @files = ls-bundle($file);
-      log(DEBUG, "Found files:\n%s", @files.map({"  {$_.name}"}).join("\n"));
-      my @dirs = @files.map({$_.name.split($sep).first}).unique;
-      log(DEBUG, 'Found unique directories: %s', @dirs.join(', '));
-      if @dirs.elems != 1 {
-        log(ERROR, 'No single root directory found, all dists must extract to a single directory');
-        exit 255;
-      }
-      $root = @dirs[0];
-      my $fn = '';
-      for @files -> $f {
-        $fn = $f if $f.name ~~ m/^(".$sep") ** 0..1 $root $sep 'META6.json'$/;
-      }
-      my $data;
-      try {
-        $data = $fn.slurp;
-        log(DEBUG, "data = %s", $data);
-        from-j($data);
-      } or do {
-        $skip-meta = True;
-        False;
-      }
-    }
-  } or do {
-    if $skip-meta {
-      log(ERROR, 'Unable to verify meta');
-    } else {
-      log(ERROR, '=<< Unable to find META6.json');
-      exit 255;
-    }
-  };
-  return if $skip-meta;
-  my $error = sub ($e, $ec?=255, Bool :$exit = True) {
-    log(ERROR, '%s', $e);
-    log(ERROR, 'To inspect the file, check: %s', $file.IO.resolve.relative) if $file;
-    exit $ec if $exit;
-  }
-  $error('production in META is set to false') if !($meta<production>//True).so
-                                               && !$development;
-
-  my $ver = $meta<ver>//$meta<vers>//$meta<version>//'';
-  $error('name should be a value', 1) unless $meta<name>;
-  $error('ver should not be nil', 2)  if     $ver eq '';
-  $error('auth should not be nil', 3) unless $meta<auth>;
-  $error('auth should start with "zef:"', 4) unless $meta<auth>.substr(0,4) eq 'zef:';
-  $error('ver cannot be "*"', 5) if $ver.trim eq '*';
-
-  my $errors;
-  my @files = $file ?? ls-bundle($file) !! do {
-    my @xs;
-    @xs.push('lib'.IO) if 'lib'.IO.d;
-    @xs.push('resources'.IO) if 'resources'.IO.d;
-    my @l;
-    while @xs {
-      for @xs.pop.dir -> $f {
-        @l.push($f) if ($f.f && $f.basename ~~ /'.'('rakumod'|'pm6')$/)
-                    || ($f.relative ~~ /^ 'resources' $sep / && $f.f);
-        @xs.push($f) if $f.d;
-      }
-    }
-    |@l;
-  };
-  my @provides = |$meta<provides>.values;
-  my @resources = |($meta<resources>//[]);
-  my %check;
-  for @files.grep({(
-      ( $file && $_.name ~~ m/^('.'|'..')? $sep? $root $sep 'lib'/) 
-    ||(!$file && $_.name ~~ m/$sep? 'lib'/)
-  ) && $_.name ~~ m/'.'('pm6'|'rakumod')$/}) -> $f {
-    %check{$f.name}++;
-  }
-  for @provides.unique -> $f {
-    %check{$root.IO.add($f).relative}--;
-  }
-  for %check.keys.sort -> $f {
-    %check{$f}:delete if %check{$f} == 0;
-    next unless %check{$f};
-    $error(
-      sprintf(
-        "File \"%s\" in %s not found in %s",
-        $f,
-        %check{$f} == -1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
-        %check{$f} ==  1 ?? 'meta<provides>' !! ($file??'tar'!!'dir'),
-      ),
-      :!exit
-    );
-  }
-  log(MSG, 'meta<provides> looks OK') unless %check.keys;
-  $errors++ if %check.keys;
-
-  %check = ();
-  for @files.grep({(
-      ( $file && $_.name ~~ m/^('.'|'..')? $sep? $root $sep 'resources'/)
-    ||(!$file && $_.name ~~ m/$sep? 'resources'/)
-  ) && $_.name !~~ m/'/'$/}) -> $f {
-    %check{S/^'/'// with $f.name}++;
-  }
-  for @resources.unique -> $f {
-    %check{$root.IO.add("resources/{$f}").relative}--;
-  }
-  for %check.keys -> $f {
-    %check{$f}:delete if %check{$f} == 0;
-    next unless %check{$f};
-    $error(
-      sprintf(
-        "File \"%s\" in %s not found in %s",
-        $f,
-        %check{$f} == -1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
-        %check{$f} ==  1 ?? 'meta<resources>' !! ($file??'tar'!!'dir'),
-      ),
-      :!exit
-    );
-  }
-  log(MSG, 'meta<resources> looks OK') unless %check.keys;
-  $errors++ if %check.keys;
-
-  my @groups = .map({.<group>}) with config-value('groups');
-  if !($meta<auth>.substr(4) (elem) [(config-value('un')//'<unset>'), |@groups]) {
-    printf "=<< \"%s\" does not match the username you last logged in with (%s) or a group you belong to\n=<< you will need to login before uploading your dist\n\n",
-           $meta<auth>.substr(4),
-           (config-value('un')//'unset');
-    exit 255 if $auth-mismatch-error;
-  }
-
-  my $auth = $meta<name>
-           ~ ':ver<'  ~ $ver ~ '>'
-           ~ ':auth<' ~ $meta<auth>.subst(/\</, '\\<').subst(/\>/, '\\>') ~ '>';
-
-  if $auth-mismatch-error {
-    my $uri = $meta<name>.comb[0].uc         ~ '/' ~
-              $meta<name>.comb[1..2].join.uc ~ '/' ~
-              $meta<name>.uc ~ '/index.json';
-    my @m;
-    try {
-      CATCH { default {
-        printf "=<< Error retrieving \"%s\", unable to verify if version exists.\n", $uri;
-      } }
-      @m = get("http://360.zef.pm/$uri");
-    };
-    for @m.grep(*.so) -> $rmeta {
-      if $meta<auth> eq $rmeta<auth>
-      && $ver eq ($rmeta<ver>//$rmeta<vers>//$rmeta<version>) {
-        printf "=<< %s version(%s) appears to exist\n", $meta<name>, $ver;
-        exit 255;
-      }
-    }
-  }
-
-  printf ">>= %s looks OK\n", $auth unless $errors;
-  printf ">>= %s could use some sprucing up\n", $auth if $errors;
-  return False if $errors;
-  True;
 }
 
 multi MAIN('m', Str :n(:$name) is copy, Str :w(:$website) is copy, Str :e(:$email) is copy) is export {
@@ -665,14 +500,6 @@ multi MAIN('upload', Str :i(:$file) = '', Bool :d(:$dry-run) = False,  Bool :s(:
       $fn = bundle('.'.IO.absolute);
     } elsif ! $file.IO.f {
       log(FATAL, 'Cannot find %s', $file);
-    } else {
-      if !$force && !so(MAIN('checkbuild', :f($fn.IO.absolute), :a)) {
-        log(WARN, 'Fez will remove support for checkbuild in v49, this means that providing your own dist file for upload will stop checking for errors');
-        my $resp = prompt-wrapper('>>= Upload anyway (y/N)? ') while ($resp//' ').lc !~~ any('y'|'ye'|'yes'|'n'|'no'|'');
-        if $resp.lc ~~ any('n'|'no'|'') {
-          log(FATAL, 'Ok, exiting');
-        }
-      }
     }
   };
 
@@ -820,12 +647,24 @@ multi MAIN('plugin', Str $key where * !~~ 'key'|'un', Str $action where * ~~ 're
   }
 }
 
+constant template-repl-vals = {
+  '$user-config-path'   => user-config-path,
+  '$system-config-path' => env-config-path,
+};
+sub template-repl(Str:D $in is copy, %replacements = template-repl-vals --> Str) {
+  for %replacements.pairs -> $p {
+    $in = $in.subst($p.key, $p.value, :g);
+  }
+
+  $in;
+}
+
 constant \HELP-HEADER = 'Fez - Raku dist manager';
 multi MAIN('h') is export { MAIN(:help); }
 multi MAIN('help') is export { MAIN(:help); }
 multi MAIN(Bool :h(:$help)?) is export {
   say HELP-HEADER ~ "\n";
-  say S:g/'$user-config-path'/{user-config-path}/ given %?RESOURCES<usage/_>.slurp;
+  say template-repl(%?RESOURCES<usage/_>.slurp);
 }
 
 multi USAGE is export {
@@ -847,7 +686,7 @@ multi USAGE is export {
     say "Did you mean any of the following?\n  fez {@options.join("\n  fez ")}\n";
   } elsif +@max-usage == 1 {
     say HELP-HEADER ~ "\n";
-    say %?RESOURCES{@max-usage[0]}.slurp;
+    say template-repl(%?RESOURCES{@max-usage[0]}.slurp);
   } else {
     MAIN(:help);
   }
@@ -882,12 +721,12 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
     for $fc.lines -> $ln {
       if my $m = $ln ~~ m:g/^ \s* 'use' \s+ $<use-stmt>=(<-[\s;:]>+ % '::')+ <-[\n]>*?';' / {
         my $match-str = "{$m[0]<use-stmt>.join.Str}";
-        if $match-str !~~ any('Test'|'NativeCall'|'nqp') {
+        if $match-str !~~ any('Test'|'NativeCall'|'nqp') && !$match-str.starts-with('v6.') {
           %rsult<use>{$match-str}.push: $fn;
           log(DEBUG, '[%s]: uses: %s', $fn, $match-str);
         }
       }
-      if $m = $ln ~~ m:g/^ \s* ('unit'\s+)? ('module'|'package'|'class') \s+ $<mod-stmt>=(<-[\s:;]>+ % '::')+ <-[\n]>*? (';'|'{') / {
+      if $m = $ln ~~ m:g/^ \s* ('unit'\s+)? ('module'|'role'|'package'|'class') \s+ $<mod-stmt>=(<-[\s:;]>+ % '::')+ <-[\n]>*? (';'|'{') / {
         if $m.Str ~~ m:g/(^\s* 'unit')|(\s+'is export'(\s+|';'|'{'))/ {
           my $match-str = $m[0]<mod-stmt>.join.Str.trim;
           %rsult<provides>{$match-str}.push: $fn;
@@ -897,7 +736,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
           log(DEBUG, '[%s]: %s missing unit or is export, skipping', $fn, $m.Str);
         }
       }
-      if $m = $ln ~~ m:g/^\s*class\s+$<cls-stmt>=(<-[\s:;]>+ % '::')+ <-[\n]>*? (';'|'{') / {
+      if $m = $ln ~~ m:g/^\s*(class|role|module)\s+$<cls-stmt>=(<-[\s:;]>+ % '::')+ <-[\n]>*? (';'|'{') / {
         my $cls = $m[0]<cls-stmt>.join.Str.trim;
         next if $cls ~~ any(|($repo-cfg<ignore-provides>//[]));
         %rsult<provides>{$cls}.push: $fn;
@@ -990,6 +829,7 @@ multi MAIN('init', Str $module is copy = '') is export {
 
     "depends" => [],
     "build-depends" => [],
+    "test-depends" => [],
 
     "resources" => [],
 
@@ -1041,10 +881,10 @@ multi MAIN('module', Str:D $mod, Bool:D :c(:$class) = False) is export {
   $cwd.add('META6.json').spurt(to-j(%meta));
 } 
 
-multi MAIN('dep', Str:D $dist, Bool :b(:$build) = False) is export {
-  MAIN('depends', $dist, :$build);
+multi MAIN('dep', Str:D $dist, Bool :b(:$build) = False, Bool :r(:$remove) = False) is export {
+  MAIN('depends', $dist, :$build, :$remove);
 }
-multi MAIN('depends', Str:D $dist, Bool :b(:$build) = False) is export {
+multi MAIN('depends', Str:D $dist, Bool :b(:$build) = False, Bool :r(:$remove) = False) is export {
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
   log(DEBUG, "found META6.json in {$cwd.relative}");
@@ -1052,6 +892,28 @@ multi MAIN('depends', Str:D $dist, Bool :b(:$build) = False) is export {
   log(DEBUG, 'inspecting meta file');
   my $dep-key = "{$build??'build-'!!''}depends";
   my %meta = from-j($cwd.add('META6.json').slurp);
+
+
+  if $remove {
+    my $ex = %meta{$dep-key}.grep(* eq $dist);
+    my $rc = 0;
+    log(DEBUG, "looking for %s in %s (exists? %s)\nexists in meta? %s", $dist, $dep-key, $ex??'yes'!!'no');
+    if $ex {
+      %meta{$dep-key} = %meta{$dep-key}.grep(* ne $dist).sort;
+      $cwd.add('META6.json').spurt: to-j(%meta);
+      log(DEBUG, 'new %s: %s', $dep-key, %meta{$dep-key}.join(', '));
+      log(MSG, '%s removed', $dist);
+    } else {
+      log(WARN, '"%s" not found in: "%s": [%s]', $dist, $dep-key, %meta{$dep-key}.sort.join(', '));
+      $rc = 1;
+    }
+
+    exit $rc;
+  }
+
+
+
+
   if (%meta{$dep-key}||[]).grep($dist).elems == 0 {
     log(DEBUG, "did not find dependency (%s) in %s", $dist, $dep-key);
     %meta{$dep-key} = [] unless %meta{$dep-key};
@@ -1128,12 +990,12 @@ multi MAIN('run', Str:D $command, :t(:$timeout) is copy = 300) is export {
   };
 }
 
-multi MAIN('res', Str:D $path) is export {
-  MAIN('resource', $path);
+multi MAIN('res', Str:D $path, Bool:D :r($remove) = False) is export {
+  MAIN('resource', $path, :$remove);
 }
-multi MAIN('resource', Str:D $path is copy) is export {
+multi MAIN('resource', Str:D $path is copy, Bool:D :r($remove) = False) is export {
   $path.=trim;
-  if $path ~~ m{'#'|'<'|'>'|'$'|'+'|'%'|'!'|'`'|'&'|'*'|'\''|'|'|'{'|'}'|'?'|'"'|'='|':'|' '|'@'|"\r"|"\n"} || $path.encode.decode('ascii', :replacement<->) ne $path {
+  if !$remove && $path ~~ m{'#'|'<'|'>'|'$'|'+'|'%'|'!'|'`'|'&'|'*'|'\''|'|'|'{'|'}'|'?'|'"'|'='|':'|' '|'@'|"\r"|"\n"} || $path.encode.decode('ascii', :replacement<->) ne $path {
     log(FATAL, '%s contains a poor choice of characters, please remove any #<>$+%%>!`&*\'|{}?"=: @', $path);
   }
 
@@ -1142,6 +1004,31 @@ multi MAIN('resource', Str:D $path is copy) is export {
   log(FATAL, 'could not find META6.json') unless $cwd;
 
   my $resource-dir =  $cwd.add('resources');
+
+  if $remove {
+    my $me = from-j($cwd.add('META6.json').slurp);
+    my $fd = $resource-dir.add($path);
+    my $ex = $me<resources>.grep({"resources/$_".IO.relative($cwd) eq $fd.relative($cwd)});
+    my $rc = 0;
+    log(DEBUG, "looking for %s (exists? %s)\nexists in meta? %s", $fd.relative($cwd), $fd.f??'yes'!!'no', $ex??'yes'!!'no');
+    if $ex && $fd.f {
+      log(DEBUG, 'exists in dir and META, removing');
+      $fd.unlink;
+      $me<resources> = $me<resources>.grep({"resources/$_".IO.relative($cwd) ne $fd.relative($cwd)}).sort;
+      $cwd.add('META6.json').spurt: to-j($me);
+      log(DEBUG, 'new resources: %s', $me<resources>.join(', '));
+    } elsif $fd.f {
+      log(WARN, 'File %s exists in resources/ but not in META6.json, file will remain in resources/ in case this was a mistake', $fd.relative($cwd));
+      $rc = 1;
+    } elsif $ex {
+      log(WARN, 'File %s exists in META6.json but not in META6.json, will remove from META6.json', $fd.relative($cwd));
+      $me<resources> = $me<resources>.grep({"resources/$_".IO.relative($cwd) ne $fd.relative($cwd)}).sort;
+      $cwd.add('META6.json').spurt: to-j($me);
+      log(DEBUG, 'new resources: %s', $me<resources>.join(', '));
+    }
+
+    exit $rc;
+  }
 
   my &ensure-resource-in-meta = sub {
     log(DEBUG, 'ensuring resource is in meta: %s', $path);
