@@ -313,7 +313,7 @@ multi MAIN('review') is export {
         ].join("\n"),
         %findings<meta><production> ?? 'true' !! 'false');
   }
-  if (!$repo-cfg<production>.so || !(%findings<meta><production>//True).so) {
+  if ($repo-cfg<production>:exists && !$repo-cfg<production>.so) || (%findings<meta><production>:exists && !%findings<meta><production>.so) {
     log(ERROR, '"production" in project config is set to false');
     $has-error = True;
   }
