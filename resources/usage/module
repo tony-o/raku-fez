@@ -4,6 +4,13 @@ USAGE
 
   fez module [--class=False] <module>
 
+FLAGS
+
+  OPTIONAL
+
+  -c|--class              a `true` value will create a `unit class`
+                          a `false` value will create a `unit module` (default)
+
 Attempts to create a module in the current dist and update the meta. Providing
 `--class` causes this command to create a `unit class` rather than `unit module`.
 Do NOT include 'lib/' in the path, eg
