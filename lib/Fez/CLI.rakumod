@@ -254,7 +254,7 @@ multi MAIN('review') is export {
       .sort({ $^a.lc cmp $^b.lc });
   my $repo-cfg  = %findings<meta-dir>.add('.fez').f
                ?? (try {
-                 CATCH { default { log(FATAL, 'error reading .zef: %s', $_); } };
+                 CATCH { default { log(FATAL, 'error reading .fez: %s', $_); } };
                  from-j(%findings<meta-dir>.add('.fez').slurp)
                })
                !! {};
@@ -702,7 +702,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
   
   my $repo-cfg  = $cwd.add('.fez').f
                ?? (try {
-                 CATCH { default { log(FATAL, 'error reading .zef: %s', $_); } };
+                 CATCH { default { log(FATAL, 'error reading .fez: %s', $_); } };
                  from-j($cwd.add('.fez').slurp)
                })
                !! {};

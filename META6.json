@@ -39,7 +39,6 @@
     "config.json",
     "lib/z.dll",
     "usage/_",
-    "usage/checkbuild",
     "usage/command",
     "usage/depends",
     "usage/help",
@@ -71,5 +70,5 @@
     "usage/config"
   ],
   "source-url": "https://github.com/tony-o/raku-fez.git",
-  "version": "48"
+  "version": "49"
 }
