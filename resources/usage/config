@@ -1,0 +1,37 @@
+CONFIG:
+
+Your fez config files has the follow format:
+
+{ /* DIST MANAGEMENT DATA */
+  "groups":     [string],
+  "key":        string,
+  "un":         string,
+
+  /* CONFIGURATION */
+  "requestors": [string],
+  "bundlers":   [string],
+  "host":       string,
+}
+
+The Dist Management Data should mostly be left alone.
+
+The configuration section, however, can be played around with.
+
+"requestors" contains modules that are available to fez and will load
+at runtime.  To implement your own the class provided in this array
+should satisfy the interface:
+
+method head($url, :%headers = () --> Array[Str]);
+method get($url, :%headers = () --> Str);
+method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = () --> Str);
+method able(--> Bool);
+
+and "bundlers" should satisfy the interface:
+
+method bundle($location, @manifest --> Bool);
+method ls($file --> Array[Str]);
+method cat($file, $path --> Buf[uint8]);
+method able(--> Bool);
+
+Your current config path is: $user-config-path
+                             $system-config-path

@@ -708,8 +708,14 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
                !! {};
 
   log(DEBUG, "scanning files in {$cwd.add('lib').relative}");
+  my $ignorer = $cwd.add('.gitignore').e
+             ?? parse(|$cwd.IO.add('.gitignore').IO.slurp.lines, '.git', :git-ignore)
+             !! parse('**/.precomp', '**.swp', '.git');
+
   my @files = ls($cwd.add('lib'), -> $f { 
-    $f.basename.ends-with('.rakumod') || $f.d || $f.basename.ends-with('.pm6');
+    !$ignorer.match($f.relative($cwd)) && (
+      $f.basename.ends-with('.rakumod') || $f.d || $f.basename.ends-with('.pm6')
+    );
   });
   log(DEBUG, "manifest:\n  %s", @files.join("\n  "));
   %findings<modfiles> = @files;
@@ -760,10 +766,6 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
         .join("\n"));
   }
 
-  my $ignorer = $cwd.add('.gitignore').e
-             ?? parse(|$cwd.IO.add('.gitignore').IO.slurp.lines, '.git', :git-ignore)
-             !! parse('**/.precomp', '**.swp', '.git');
-  
   my @rsrcs = $cwd.add('resources').d
     ?? ls($cwd.add('resources'), -> $f { True })
          .grep({ $ignorer.rmatch($_) })
