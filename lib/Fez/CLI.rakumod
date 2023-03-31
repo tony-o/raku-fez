@@ -814,7 +814,7 @@ multi MAIN('init', Str $module is copy = '') is export {
   }
 
   my $auth = '';
-  if ?config-value('un') ne '' {
+  if config-value('un') && ?config-value('un') ne ''  {
     log(DEBUG, "found auth zef:%s", config-value('un'));
     $auth = "zef:{config-value('un')}";
   } else {
