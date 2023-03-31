@@ -11,7 +11,7 @@ my @chandlers = |$CONFIG<bundlers>;
 my @handlers;
 for @chandlers -> $h {
   my $caught = False;
-  CATCH { dd $_; $caught = True; .resume; }
+  CATCH { $caught = True; .resume; }
   require ::("$h");
   next if $caught;
   next unless ::("$h").able;
