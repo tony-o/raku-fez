@@ -18,6 +18,7 @@ COMMANDS
     run                   runs a command listed in `cmd`
     refresh               attempts to update the META6 from the file system
                           this does NOT prompt before overwriting
+    license               view or manage the current repo's license                          
 
   RELEASE MANAGEMENT
 
