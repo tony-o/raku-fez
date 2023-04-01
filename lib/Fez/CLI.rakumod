@@ -828,8 +828,15 @@ multi MAIN('license', Str:D :s(:$set) = '') is export {
 
   } else {
     my $lkey    = $?DISTRIBUTION.meta<resources>.grep(*.lc eq "licenses/{$set.lc}.txt").first;
+    log(DEBUG, 'found license key: %s', $lkey);
     my $LICENSE = %?RESOURCES{$lkey}.slurp;
     $cwd.add('LICENSE.txt').spurt: $LICENSE;
+    log(DEBUG, 'copied %s to %s', %?RESOURCES{$lkey}.absolute, $cwd.add('LICENSE.txt').relative);
+
+    log(DEBUG, 'updating license in meta');
+    my $meta = from-j($cwd.add('META6.json').slurp);
+    $meta<license> = $lkey.substr(9, *-4);
+    $cwd.add('META6.json').spurt: to-j($meta);
     log(MSG, 'Updated repo license to: %s', $lkey.substr(9, *-4)); 
   }
 }
@@ -854,8 +861,9 @@ multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = config-value(
   my $module-file  = @module-parts.pop ~ ".rakumod";
   my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
   my $dist-name    = S:g/':'/\-/ given $module;
+  my $license-name = $?DISTRIBUTION.meta<resources>.grep(*.lc eq "licenses/{$license.lc}.txt").first;
   my $LICENSE      = $license
-                  ?? %?RESOURCES{$?DISTRIBUTION.meta<resources>.grep(*.lc eq "licenses/{$license.lc}.txt").first}.slurp
+                  ?? %?RESOURCES{$license-name}.slurp
                   !! '';
 
   log(DEBUG, "module-parts:%s\nmodule-file:%s\nmodule-path:%s\n  dist-name:%s", @module-parts.join(', '), $module-file, $module-path, $dist-name);
@@ -881,7 +889,7 @@ multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = config-value(
   }
 
   log(DEBUG, 'creating meta file');
-  '.'.IO.add($dist-name, 'META6.json').IO.spurt: to-j({
+  my $meta = {
     "name" => "$dist-name",
     "version" =>  "0.0.1",
     "auth" => "$auth",
@@ -897,7 +905,11 @@ multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = config-value(
     "provides" => {
       "$module" => "$module-path"
     }
-  });
+  };
+
+  $meta<license> = $license-name.substr(9, *-4) if $license ne ''; 
+
+  '.'.IO.add($dist-name, 'META6.json').IO.spurt: to-j($meta);
 
   log(DEBUG, 'creating empty unit module file');
   '.'.IO.add($dist-name, $module-path).IO.spurt: "unit module $module;";
