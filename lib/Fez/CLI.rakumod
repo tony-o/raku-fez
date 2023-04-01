@@ -790,15 +790,29 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
   %findings;
 }
 
-multi MAIN('in', Str $module is copy = '') is export {
-  MAIN('init', $module);
+multi MAIN('in', Str $module is copy = '', Str:D :l(:$license) = '') is export {
+  MAIN('init', $module, :$license);
 }
-multi MAIN('init', Str $module is copy = '') is export {
+multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = '') is export {
+  log(FATAL,
+      "License %s was not found, licenses available:\n  %s",
+      $license,
+      $?DISTRIBUTION.meta<resources>
+        .grep(*.starts-with('licenses/'))
+        .map(*.substr(9, *-4))
+        .sort({ $^a.lc cmp $^b.lc })
+        .join("\n  ")
+  ) if !$?DISTRIBUTION.meta<resources>.grep(*.lc eq "licenses/{$license.lc}.txt").elems
+    && $license ne '';
+
   $module          = prompt-wrapper('>>= Module name? ') while ($module//'').chars == 0;
   my @module-parts = $module.split('::', :skip-empty);
   my $module-file  = @module-parts.pop ~ ".rakumod";
   my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
-  my $dist-name = S:g/':'/\-/ given $module;
+  my $dist-name    = S:g/':'/\-/ given $module;
+  my $LICENSE      = $license
+                  ?? %?RESOURCES{$?DISTRIBUTION.meta<resources>.grep(*.lc eq "licenses/{$license.lc}.txt").first}.slurp
+                  !! '';
 
   log(DEBUG, "module-parts:%s\nmodule-file:%s\nmodule-path:%s\n  dist-name:%s", @module-parts.join(', '), $module-file, $module-path, $dist-name);
 
@@ -814,9 +828,10 @@ multi MAIN('init', Str $module is copy = '') is export {
   }
 
   my $auth = '';
-  if config-value('un') && ?config-value('un') ne ''  {
-    log(DEBUG, "found auth zef:%s", config-value('un'));
-    $auth = "zef:{config-value('un')}";
+  my $un = config-value('un') // '';
+  if $un ne ''  {
+    log(DEBUG, "found auth zef:%s", $un);
+    $auth = "zef:{$un}";
   } else {
     log(INFO, "no auth found for the zef ecosystem, creating with empty auth str");
   }
@@ -853,6 +868,10 @@ multi MAIN('init', Str $module is copy = '') is export {
 
   use-ok "$module";
   EOF
+
+  if $license ne '' {
+    '.'.IO.add($dist-name, 'LICENSE.txt').spurt: $LICENSE;
+  }
 }
 
 multi MAIN('mod', Str:D $mod, Bool:D :c(:$class) = False) is export {
