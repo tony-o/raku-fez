@@ -1,8 +1,17 @@
 USAGE
 
-  fez in [<module>]
+  fez in [<module>] [-l]
 
-  fez init [<module>]
+  fez init [<module>] [--license]
+
+FLAGS
+  
+  OPTIONAL
+
+  -l|--license            creates the license file.  if omitted then
+                          your fez config is checked for the key
+                          "default-init-license".  if this doesn't exist
+                          then no license file is created
 
 Initializes a module with a suggested skeleton. <module> is required and
 you will be prompted if no name is given.

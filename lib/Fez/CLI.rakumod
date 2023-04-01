@@ -790,10 +790,54 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
   %findings;
 }
 
-multi MAIN('in', Str $module is copy = '', Str:D :l(:$license) = '') is export {
+multi MAIN('li', Str:D :s(:$set) = '') is export {
+  MAIN('license', :$set);
+}
+multi MAIN('license', Str:D :s(:$set) = '') is export {
+  log(FATAL,
+      "License %s was not found, licenses available:\n  %s",
+      $set,
+      $?DISTRIBUTION.meta<resources>
+        .grep(*.starts-with('licenses/'))
+        .map(*.substr(9, *-4))
+        .sort({ $^a.lc cmp $^b.lc })
+        .join("\n  ")
+  ) if !$?DISTRIBUTION.meta<resources>.grep(*.lc eq "licenses/{$set.lc}.txt").elems
+    && $set ne '';
+
+  my $cwd = upcurse-meta();
+  my $clicense = '';
+  $clicense = $cwd.add('LICENSE').slurp if $cwd.add('LICENSE').f;
+  $clicense = $cwd.add('LICENSE.txt').slurp if $cwd.add('LICENSE.txt').f;
+
+  log(WARN, 'No license found in repo') if $clicense eq '' && $set eq '';
+
+  if $set eq '' {
+    my $match = '';
+    for $?DISTRIBUTION.meta<resources>.grep(*.starts-with: "licenses/") -> $rsrc {
+      if $clicense eq %?RESOURCES{$rsrc}.slurp {
+        $match = $rsrc;
+      }
+    }
+
+    if $match eq '' {
+      log(MSG, 'No license found');
+    } else {
+      log(MSG, 'Current license: %s', $match.substr(9, *-4));
+    }
+
+  } else {
+    my $lkey    = $?DISTRIBUTION.meta<resources>.grep(*.lc eq "licenses/{$set.lc}.txt").first;
+    my $LICENSE = %?RESOURCES{$lkey}.slurp;
+    $cwd.add('LICENSE.txt').spurt: $LICENSE;
+    log(MSG, 'Updated repo license to: %s', $lkey.substr(9, *-4)); 
+  }
+}
+
+multi MAIN('in', Str $module is copy = '', Str:D :l(:$license) = config-value('default-init-license')//'') is export {
   MAIN('init', $module, :$license);
 }
-multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = '') is export {
+multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = config-value('default-init-license')//'') is export {
   log(FATAL,
       "License %s was not found, licenses available:\n  %s",
       $license,

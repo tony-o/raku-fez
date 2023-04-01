@@ -1,0 +1,20 @@
+USAGE
+
+  fez li [-s]
+
+  fez license [--set='']
+
+FLAGS
+  
+  OPTIONAL
+
+  -s|--set                sets the license for the current repo
+
+If `-s` is not supplied then attempts to figure out what the current
+repo's license is.  If `-s` IS supplied and fez knows about that
+license then it will update the `LICENSE.txt` file.
+
+You can set the default license for `init` in your config file by
+setting the key value "default-init-license": "..." in your
+$HOME/.fez-config.json file.  You can ensure the string is correct by
+running `fez init --license <...>`.
