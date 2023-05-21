@@ -262,10 +262,10 @@ multi MAIN('review') is export {
   log(MSG, "Bundle manifest:\n  %s", @manifest.join("\n  "));
 
   my %metas = (
-    'Depends'       => 'depends',
-    'Provides'      => 'provides',
-    'Build depends' => 'build-depends',
-    'Test depends'  => 'test-depends',
+    #'Depends'       => 'depends',
+    #'Provides'      => 'provides',
+    #'Build depends' => 'build-depends',
+    #'Test depends'  => 'test-depends',
     'Resources'     => 'resources',
   );
   my ($ok, $key, $left, $right, $l-diff, $r-diff, $ignores);

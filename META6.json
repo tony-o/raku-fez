@@ -599,6 +599,7 @@
     "usage/depends",
     "usage/help",
     "usage/init",
+    "usage/license",
     "usage/list",
     "usage/login",
     "usage/meta",
@@ -625,5 +626,5 @@
     "usage/version"
   ],
   "source-url": "https://github.com/tony-o/raku-fez.git",
-  "version": "51"
+  "version": "52"
 }

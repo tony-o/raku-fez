@@ -105,26 +105,36 @@ If you've forgotten your password, use this little guy.
 >>= password reset successful, you now have a new key and can upload dists
 ```
 
-### checkbuild
+### review
 
-This is the check fez runs when you run `fez upload`
+This is the check fez runs when you run `fez upload`. NOTE: the depends, build depends, and provides checks are disabled until RakuAST becomes available.
 
 ```
-$ fez checkbuild
->>= Inspecting ./META6.json
->>= meta<provides> looks OK
->>= meta<resources> looks OK
->>= fez:ver<11>:auth<zef:tony-o> looks OK
+$ fez review
+>= Bundle manifest:
+    <..list of files fez will bundle for upload..>
+>>= Build depends ok
+>>= Depends ok
+>>= Provides ok
+>>= Resources ok
+>>= Test depends ok
 ```
 
 -or if you have errors-
 
 ```
-$ fez checkbuild
->>= Inspecting ./META6.json
->>= meta<provides> looks OK
-=<< File "resources/config.json" in dir not found in meta<resources>
->>= fez:ver<11>:auth<zef:tony-o> could use some sprucing up
+$ fez review 
+>= Bundle manifest:
+    <..list of files fez will bundle for upload..>
+>>= Build depends ok
+>>= Depends not ok
+>>=   in meta but unexpected:
+         raku-mailgun
+>>= Provides ok
+>>= Resources not ok
+>>=   not in meta:
+         usage/license
+>>= Test depends ok
 ```
 
 If you're rolling your own tarballs then you can specify the file to checkout with `--file=`, please keep in mind that checkbuild requires access to a tar that can work with compression for _some_ of these checks.
