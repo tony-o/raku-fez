@@ -304,7 +304,7 @@ multi MAIN('review') is export {
   }
   log(WARN, '`.rakumod` should be used for module extensions, not `.pm6`')
     if %findings<modfiles>.grep({ $_.ends-with('.pm6') });
-  
+
   if %findings<meta><production>:exists {
     log(WARN,
         ['"production" in META is deprecated. Please create a .fez file with the json object',
@@ -350,7 +350,7 @@ multi MAIN('review') is export {
       ERROR,
       "auth does not match logged in user or user's groups\n  expected: %s\n  got: %s",
       @group-auths.raku,
-      %findings<meta><auth>, 
+      %findings<meta><auth>,
     );
     $has-error = True;
   }
@@ -563,7 +563,7 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
   my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
                              .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
                              .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
-                                      ?? Version.new($^a<ver>//$^a<vers>//$^a<version>) cmp 
+                                      ?? Version.new($^a<ver>//$^a<vers>//$^a<version>) cmp
                                          Version.new($^b<ver>//$^b<vers>//$^b<version>)
                                       !! $^a<name>.lc cmp $^b<name>.lc})
                              .map({$_<dist>});
@@ -699,7 +699,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
   my %findings;
   my $cwd = upcurse-meta();
   log(FATAL, 'could not find META6.json') unless $cwd;
-  
+
   my $repo-cfg  = $cwd.add('.fez').f
                ?? (try {
                  CATCH { default { log(FATAL, 'error reading .fez: %s', $_); } };
@@ -712,7 +712,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
              ?? parse(|$cwd.IO.add('.gitignore').IO.slurp.lines, '.git', :git-ignore)
              !! parse('**/.precomp', '**.swp', '.git');
 
-  my @files = ls($cwd.add('lib'), -> $f { 
+  my @files = ls($cwd.add('lib'), -> $f {
     !$ignorer.match($f.relative($cwd)) && (
       $f.basename.ends-with('.rakumod') || $f.d || $f.basename.ends-with('.pm6')
     );
@@ -725,7 +725,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
   scan-files(@files.sort, sub (Str:D $fn, Str:D $fc) {
     %rsult<lib-files>{$fn}++;
     for $fc.lines -> $ln {
-      if my $m = $ln ~~ m:g/^ \s* 'use' \s+ $<use-stmt>=(<-[\s;:]>+ % '::')+ <-[\n]>*?';' / {
+      if my $m = $ln ~~ m:g/^ \s* ('use'|'need'|'require') \s+ $<use-stmt>=(<-[\s;:]>+ % '::')+ <-[\n]>*?';' / {
         my $match-str = "{$m[0]<use-stmt>.join.Str}";
         if $match-str !~~ any('Test'|'NativeCall'|'nqp') && !$match-str.starts-with('v6.') {
           %rsult<use>{$match-str}.push: $fn;
@@ -837,7 +837,7 @@ multi MAIN('license', Str:D :s(:$set) = '') is export {
     my $meta = from-j($cwd.add('META6.json').slurp);
     $meta<license> = $lkey.substr(9, *-4);
     $cwd.add('META6.json').spurt: to-j($meta);
-    log(MSG, 'Updated repo license to: %s', $lkey.substr(9, *-4)); 
+    log(MSG, 'Updated repo license to: %s', $lkey.substr(9, *-4));
   }
 }
 
@@ -907,7 +907,7 @@ multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = config-value(
     }
   };
 
-  $meta<license> = $license-name.substr(9, *-4) if $license ne ''; 
+  $meta<license> = $license-name.substr(9, *-4) if $license ne '';
 
   '.'.IO.add($dist-name, 'META6.json').IO.spurt: to-j($meta);
 
@@ -916,7 +916,7 @@ multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = config-value(
 
   log(DEBUG, 'making test directory');
   mkdir '.'.IO.add($dist-name, 't');
-  
+
   '.'.IO.add($dist-name, 't', '00-use.rakutest').spurt: qq:to/EOF/;
   use Test;
 
@@ -945,7 +945,7 @@ multi MAIN('module', Str:D $mod, Bool:D :c(:$class) = False) is export {
   my @module-parts = $mod.split('::', :skip-empty);
   my $module-file  = @module-parts.pop ~ ".rakumod";
   my $module-path  = 'lib'.IO.add(|@module-parts, $module-file);
-  
+
   my $root = $cwd.add('lib');
   while @module-parts.elems {
     $root := $root.add(@module-parts.shift);
@@ -954,9 +954,9 @@ multi MAIN('module', Str:D $mod, Bool:D :c(:$class) = False) is export {
 
   $module-path.spurt("unit {$class??'class'!!'module'} $mod;\n");
   %meta<provides>{$mod} = $module-path.relative($cwd);
-  
+
   $cwd.add('META6.json').spurt(to-j(%meta));
-} 
+}
 
 multi MAIN('dep', Str:D $dist, Bool :b(:$build) = False, Bool :r(:$remove) = False) is export {
   MAIN('depends', $dist, :$build, :$remove);
@@ -1039,7 +1039,7 @@ multi MAIN('run', Str:D $command, :t(:$timeout) is copy = 300) is export {
   })})) unless $dist-cfg.f;
 
   my $cfg = from-j($dist-cfg.slurp);
-  
+
   log(FATAL, '"%s" command not found\navailable commands: %s', $command, $cfg<commands>.keys.sort.join(', '))
     unless $cfg<commands>{$command};
 
