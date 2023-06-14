@@ -12,7 +12,7 @@ FLAGS
 
 If `-s` is not supplied then attempts to figure out what the current
 repo's license is.  If `-s` IS supplied and fez knows about that
-license then it will update the `LICENSE.txt` file.
+license then it will update the `LICENSE.txt` and `META6.json` files.
 
 You can set the default license for `init` in your config file by
 setting the key value "default-init-license": "..." in your
