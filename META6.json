@@ -18,6 +18,7 @@
     "Fez::CLI": "lib/Fez/CLI.rakumod",
     "Fez::Logr": "lib/Fez/Logr.rakumod",
     "Fez::Types": "lib/Fez/Types.rakumod",
+    "Fez::Util::AST": "lib/Fez/Util/AST.rakumod",
     "Fez::Util::Config": "lib/Fez/Util/Config.rakumod",
     "Fez::Util::Curl": "lib/Fez/Util/Curl.rakumod",
     "Fez::Util::Date": "lib/Fez/Util/Date.rakumod",
