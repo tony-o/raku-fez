@@ -13,7 +13,7 @@ jobs:
       - name: os deps
         run: |
           apt update && \
-          apt install -y git zlib1g
+          apt install -y git zlib1g zlib1g-dev
       - name: clone
         run: git clone -b "${GITHUB_REF##*/}" https://github.com/tony-o/raku-fez ./fez
       - name: module deps
