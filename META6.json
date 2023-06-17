@@ -4,7 +4,7 @@
   "build-depends": [
   ],
   "depends": [
-    "z:from<native>"
+    "libz:from<native>"
   ],
   "description": "one way to upload your dists to the masses.",
   "license": "Artistic-2.0",
