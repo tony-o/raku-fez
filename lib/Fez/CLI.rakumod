@@ -6,7 +6,6 @@ use Fez::Logr;
 use Fez::Util::Pass;
 use Fez::Util::Json;
 use Fez::Util::Config;
-use Fez::Util::Date;
 use Fez::Util::Uri;
 use Fez::Util::META6;
 use Fez::Util::FS;
@@ -23,6 +22,7 @@ log(DEBUG, 'Running in unattended mode') if $UNATTENDED;
 
 sub pass-wrapper(Str:D $prompt --> Str) {
   if $UNATTENDED {
+    log(ERROR, 'Requested prompt with --unattended: %s', $prompt);
     log(FATAL, 'Unable to prompt while --unattended is in use');
   }
   getpass($prompt);
@@ -576,7 +576,7 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
 }
 
 multi MAIN('rm', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
-  MAIN('remove', $dist, $url);
+  MAIN('remove', $dist, :$url);
 }
 multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
   my $response = org-list(config-value('key'));
@@ -595,17 +595,9 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
   if !$d || !$d<path> {
     log(FATAL, 'Couldn\'t find %s', $dist);
   }
-  try {
-    CATCH { default { } }
-    my $date = try_dateparse(head( (S/'index.json'?$/$d<path>/ with $url) )<Last-Modified>);
-    my $diff = DateTime.now - $date;
-    if $diff > 86400 {
-      log(FATAL, 'It\'s past the 24 hour window for removing modules');
-    }
-  };
   $response = remove(config-value('key'), $d<dist>);
   if $response.success {
-    log(MSG, 'Request received');
+    log(MSG, 'Request received, if it is past the 24 hour window for removing modules then the module will remain in the ecosystem and indexed');
   }
   log(FATAL, 'Error processing request');
 }
