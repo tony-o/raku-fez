@@ -12,8 +12,6 @@ fez is the command line tool used to manage your ecosystem user/pass.
 
 - [installation](#installation)
 - [current functionality](#current-functionality)
-- [module management](#module-management)
-- [plugins](#plugins)
 - [faq](#faq)
 - [articles-about-fez](#articles-about-fez)
 - [license](#license)
