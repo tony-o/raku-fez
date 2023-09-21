@@ -6,6 +6,7 @@ To install:
 $ zef install fez
 ```
 
+***NOTE: you must have zlib installed if you are not on windows!***
 
 ## fez
 
