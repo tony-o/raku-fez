@@ -20,7 +20,7 @@ fez is the command line tool used to manage your ecosystem user/pass.
 
 as easy as: `zef install fez`
 
-*** Note: if you are having trouble installing fez and you see an error referring to zlib, then please install zlib and installing again prior to opening a bug.
+*** Note: if you are having trouble installing fez and you see an error referring to zlib, then please install zlib and try installing fez again prior to opening a bug.
 
 ### current functionality:
 
