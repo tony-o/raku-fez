@@ -598,8 +598,9 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
   $response = remove(config-value('key'), $d<dist>);
   if $response.success {
     log(MSG, 'Request received, if it is past the 24 hour window for removing modules then the module will remain in the ecosystem and indexed');
+  } else {
+    log(FATAL, 'Error processing request');
   }
-  log(FATAL, 'Error processing request');
 }
 
 multi MAIN('p', Bool :a(:$all) = False) is export {
