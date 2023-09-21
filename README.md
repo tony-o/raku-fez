@@ -34,7 +34,7 @@ Fez - Raku dist manager
 | command  | info |
 |----------|------|
 | v\|version | prints out the version of fez you're using |
-|----------|------|
+| *DIST MANAGEMENT* | 
 | init | initializes a new module |
 | resource | creates a new resource file at the given path, creating the path if necessary |
 | depends | add a build or runtime dependency to the meta |
@@ -42,7 +42,7 @@ Fez - Raku dist manager
 | run | runs a command listed in `cmd` |
 | refresh | attempts to update the META6 from the file system this does NOT prompt before overwriting |
 | license | view or manage the current repo's license |
-|----------|------|
+| *RELEASE MANAGEMENT* |
 | review | goes through the current directory to find any errors that might be lurking upon upload |
 | register | registers you up for a new account |
 | login | logs you in and saves your key info |
@@ -52,7 +52,6 @@ Fez - Raku dist manager
 | list | lists the dists for the currently logged in user |
 | remove | removes a dist from the ecosystem (requires fully qualified dist name, copy from `list` if in doubt) |
 | org | org actions, use `fez org help` for more info |
-|----------|------|
 
 
 To see more information about any of these commands just run `fez help <cmd>`, example:
