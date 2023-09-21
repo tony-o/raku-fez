@@ -6,8 +6,6 @@ To install:
 $ zef install fez
 ```
 
-***NOTE: you must have zlib installed if you are not on windows!***
-
 ## fez
 
 fez is the command line tool used to manage your ecosystem user/pass.
@@ -25,162 +23,57 @@ fez is the command line tool used to manage your ecosystem user/pass.
 
 as easy as: `zef install fez`
 
+*** Note: if you are having trouble installing fez and you see an error referring to zlib, then please install zlib and installing again prior to opening a bug.
+
 ### current functionality:
 
-* login
-* register
-* upload
-* reset-password
-* meta
-* plugin management
-* command extensions via plugins
+Fez - Raku dist manager
 
-if you have features or edge cases that would make your migration to fez easier, please open a bug here in github or message me in #raku on freenode (tonyo).
+#### INFORMATION
 
-### register
+| command  | info |
+|----------|------|
+| v\|version | prints out the version of fez you're using |
+|----------|------|
+| init | initializes a new module |
+| resource | creates a new resource file at the given path, creating the path if necessary |
+| depends | add a build or runtime dependency to the meta |
+| cmd | list commands this module provides |
+| run | runs a command listed in `cmd` |
+| refresh | attempts to update the META6 from the file system this does NOT prompt before overwriting |
+| license | view or manage the current repo's license |
+|----------|------|
+| review | goes through the current directory to find any errors that might be lurking upon upload |
+| register | registers you up for a new account |
+| login | logs you in and saves your key info |
+| upload | creates a distribution tarball and uploads |
+| meta | update your public meta info (website, email, name) |
+| reset-password | initiates a password reset using the email that you registered with |
+| list | lists the dists for the currently logged in user |
+| remove | removes a dist from the ecosystem (requires fully qualified dist name, copy from `list` if in doubt) |
+| org | org actions, use `fez org help` for more info |
+|----------|------|
 
-```
-λ local:~$ fez register
->>= Email: xyz@abc.com
->>= Username: tony-o
->>= Password:
->>= registration successful, requesting auth key
->>= login successful, you can now upload dists
->>= what would you like your display name to show? tony o
->>= what's your website? DEATHBYPERL6.com
->>= public email address? xxxx
-=<< your meta info has been updated
-```
 
-### login
-
-This is not necessary if you've just registered but you will eventually have to request a new key.
-
-```
-λ local:~$ fez login
->>= Username: tony-o
->>= Password:
->>= login successful, you can now upload dists
-```
-
-### meta
-
-Update your meta info - this information is public.
+To see more information about any of these commands just run `fez help <cmd>`, example:
 
 ```
-λ local:~$ fez meta
->>= what would you like your display name to show? tony o
->>= what's your website? DEATHBYPERL6.com
->>= public email address? xxxx
-=<< your meta info has been updated
+~$ fez resource
+Fez - Raku dist manager
+
+USAGE
+
+  fez res <path>
+
+  fez resource <path>
+
+Attempts to create a resource in the current dist and update the meta. Do NOT
+include 'resources/' in the path, eg
+
+fez resource usage/default
+
+Will create the file: `resources/usage/default`.
 ```
-
-### upload
-
-If you're not logged in for this bit then it will prompt you to do so.
-
-```
-λ local:~/projects/perl6-slang-sql-master$ fez upload
->>= Slang::SQL:ver<0.1.2>:auth<zef:tony-o> looks OK
->>= Hey! You did it! Your dist will be indexed shortly.
-```
-
-or, if there are errors:
-
-```
-λ local:~/Downloads/perl6-slang-sql-master$ fez upload
-=<< "tonyo" does not match the username you last logged in with (tony-o),
-=<< you will need to login before uploading your dist
-```
-
-### reset password
-
-If you've forgotten your password, use this little guy.
-
-```
-λ local:~$ fez reset-password
->>= Username: tony-o
->>= A reset key was successfully requested, please check your email
->>= New Password:
->>= What is the key in your email? abcdef...
->>= password reset successful, you now have a new key and can upload dists
-```
-
-### review
-
-This is the check fez runs when you run `fez upload`. NOTE: the depends, build depends, and provides checks are disabled until RakuAST becomes available.
-
-```
-$ fez review
->= Bundle manifest:
-    <..list of files fez will bundle for upload..>
->>= Build depends ok
->>= Depends ok
->>= Provides ok
->>= Resources ok
->>= Test depends ok
-```
-
--or if you have errors-
-
-```
-$ fez review 
->= Bundle manifest:
-    <..list of files fez will bundle for upload..>
->>= Build depends ok
->>= Depends not ok
->>=   in meta but unexpected:
-         raku-mailgun
->>= Provides ok
->>= Resources not ok
->>=   not in meta:
-         usage/license
->>= Test depends ok
-```
-
-If you're rolling your own tarballs then you can specify the file to checkout with `--file=`, please keep in mind that checkbuild requires access to a tar that can work with compression for _some_ of these checks.
-
-## module management
-
-### listing your modules
-
-`fez list <filter?>`
-
-```
-$ fez list csv
->>= CSV::Parser:ver<0.1.2>:auth<zef:tony-o>
->>= Text::CSV::LibCSV:ver<0.0.1>:auth<zef:tony-o>
-```
-
-```
-$ fez list
->>= Bench:ver<0.2.0>:auth<zef:tony-o>
->>= Bench:ver<0.2.1>:auth<zef:tony-o>
->>= CSV::Parser:ver<0.1.2>:auth<zef:tony-o>
->>= Data::Dump:ver<0.0.12>:auth<zef:tony-o>
-...etc
-```
-
-### removing a module
-
-This is highly unrecommended but a feature nonetheless.  This requires you use the full dist name as shown in `list` and is only available within 24 hours of upload. If an error occurs while removing the dist, you'll receive an email.
-
-```
-$ fez remove 'Data::Dump:ver<0.0.12>:auth<zef:tony-o>'
->>= Request received
-```
-
-## plugins
-
-### plugin
-
-`fez plugin` lists the current plugins in your config file(s).
-
-`fez plugin <key> 'remove'|'append'|'prepend' <value>` does the requested action to <key> in your user config.
-
-#### extensions
-
-fez can now load extensions to `MAIN`.  this happens as a catchall at the bottom of fez and uses the first available extensions that it can and exits afterwards. eg if two extensions provide a command `fez test` then the first one that successfully completes (doesn't die or exit) will be run and then fez will exit.
 
 ## faq
 
@@ -199,18 +92,6 @@ zef will prioritize whichever gives the highest version and then the rest depend
 ### what's this sdist directory?
 
 when fez bundles your source it outputs to `sdist/<name>.tar.gz` and then uploads that package to the ecosystem.  there are two ways that fez might try to bundle your package. as of `fez:ver<26+>` fez will attempt to remove the sdist/ directory _if no `--file` is manually specified_
-
-#### using pax
-
-pax is the bundler included with v38 onward to avoid compatibility issues with certain BSDs.  git archive is no longer used as it caused a lot of confusion - this means that what's on disk is what is getting bundled rather than what is in main/master!
-
-#### using git archive (deprecated with v38)
-
-fez will attempt to run `git archive` which will obey your `.gitignore` files. it is a good idea to put sdist/ in your root gitignore to prevent previously uploaded modules.
-
-#### using tar (deprecated with v38)
-
-if there is a `tar` in path then fez will try to bundle everything not in hidden directories/files (anything starting with a `.`) and ignore the `sdist/` directory.
 
 ## articles about fez
 
