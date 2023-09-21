@@ -332,15 +332,15 @@ multi MAIN('review') is export {
     $has-error = True;
   }
   if (%findings<meta>{$ver}//'') eq '' {
-    log(ERROR, 'ver should not be nil', 2);
+    log(ERROR, 'ver should not be nil');
     $has-error = True;
   }
   unless %findings<meta><auth>//False {
-    log(ERROR, 'auth should not be nil', 3);
+    log(ERROR, 'auth should not be nil');
     $has-error = True;
   }
   if %findings<meta>{$ver}.trim eq '*' {
-    log(ERROR, 'ver cannot be "*"', 5);
+    log(ERROR, 'ver cannot be "*"');
     $has-error = True;
   }
   my @group-auths = (config-value('groups')//[]).map({"zef:{$_<group>}"});
