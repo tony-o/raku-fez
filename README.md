@@ -15,7 +15,6 @@ fez is the command line tool used to manage your ecosystem user/pass.
 - [faq](#faq)
 - [articles-about-fez](#articles-about-fez)
 - [license](#license)
-- [authors](#authors)
 
 ### installation
 
@@ -32,7 +31,7 @@ Fez - Raku dist manager
 | command  | info |
 |----------|------|
 | v\|version | prints out the version of fez you're using |
-| *DIST MANAGEMENT* | 
+| _*DIST MANAGEMENT*_ | 
 | init | initializes a new module |
 | resource | creates a new resource file at the given path, creating the path if necessary |
 | depends | add a build or runtime dependency to the meta |
@@ -40,7 +39,7 @@ Fez - Raku dist manager
 | run | runs a command listed in `cmd` |
 | refresh | attempts to update the META6 from the file system this does NOT prompt before overwriting |
 | license | view or manage the current repo's license |
-| *RELEASE MANAGEMENT* |
+| _*RELEASE MANAGEMENT*_ |
 | review | goes through the current directory to find any errors that might be lurking upon upload |
 | register | registers you up for a new account |
 | login | logs you in and saves your key info |
@@ -52,7 +51,7 @@ Fez - Raku dist manager
 | org | org actions, use `fez org help` for more info |
 
 
-To see more information about any of these commands just run `fez help <cmd>`, example:
+To see more information about any of these commands just run `fez <cmd>`, example:
 
 ```
 ~$ fez resource
@@ -101,13 +100,3 @@ if you'd like to see your article featured here, please send a pr.
 ## license
 
 [![License: Artistic-2.0](https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg)](https://opensource.org/licenses/Artistic-2.0)
-
-## authors
-
-@[tony-o](https://github.com/tony-o)
-
-@[patrickbr](https://github.com/patrickbkr)
-
-@[JJ](https://github.com/JJ)
-
-@[melezhik](https://github.com/melezhik)
