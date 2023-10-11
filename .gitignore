@@ -3,3 +3,6 @@
 .precomp
 sdist/
 tmp/
+
+# Comma
+.idea/

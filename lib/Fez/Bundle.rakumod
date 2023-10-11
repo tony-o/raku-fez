@@ -22,6 +22,8 @@ for @chandlers -> $h {
 die 'Unable to find a suitable handler for bundling (tried pax, and tar), please ensure one is in your path'
   unless @handlers.elems;
 
+constant @ignored-dirs = '.git/*', 'sdist/*', '.github/*';
+
 sub bundle($target, :$dry-run = False) is export {
   my $sdist  = $target.IO.absolute.IO.add('sdist');
   mkdir $sdist.absolute unless $sdist.d;
@@ -34,8 +36,9 @@ sub bundle($target, :$dry-run = False) is export {
   my $location = $sdist.add($io);
   
   my $ignorer = '.'.IO.add('.gitignore').IO.f
-             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git/*', 'sdist/*', :git-ignore)
-             !! parse('.git/*', '.precomp', 'sdist/*');
+             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, | @ignored-dirs,
+                     :git-ignore)
+             !! parse( '.precomp', |@ignored-dirs);
              
   my @manifest = ls('.'.IO, -> $fn {
     $ignorer.rmatch($fn.Str)
