@@ -663,9 +663,17 @@ multi MAIN(Bool :h(:$help)?) is export {
 multi USAGE is export {
   my (@usage, $rx);
   my @keys  = |@*ARGS.grep({!$_.starts-with('-')});
-  my @max-usage = @keys.elems == 1
-               ?? $?DISTRIBUTION.meta<resources>.grep({"usage/$_" eq @keys[0]}).first//()
-               !! ();
+  my @as;
+  my @max-usage;
+  if @keys.elems >= 1 {
+    my @usages = $?DISTRIBUTION.meta<resources>.grep(* ~~ /^'usage/'/).map(*.substr(6)).grep(*.defined);
+    @max-usage = @usages.grep({$_ eq @keys[0..min(+$_.indices('_'), +@keys-1)].join('_')});
+    if +@max-usage && +@keys > 1 {
+      @max-usage.=sort({ $^a.indices('_') cmp $^b.indices('_') });
+      @max-usage.=tail;
+    }
+    @max-usage .=map({"usage/{$_}"});
+  }
   if @max-usage == 0 {
     for @keys.combinations.grep(*.elems) -> @combo {
       $rx   = '^\'usage/\'.*?\'' ~ @combo.join('\'<-[_]>*_\'') ~ '\'<-[_]>*';
