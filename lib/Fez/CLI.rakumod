@@ -343,13 +343,13 @@ multi MAIN('review') is export {
     log(ERROR, 'ver cannot be "*"');
     $has-error = True;
   }
-  my @group-auths = (config-value('groups')//[]).map({"zef:{$_<group>}"});
+  my @group-auths = |(config-value('groups')//[]).map({"zef:{$_<group>}"});
   @group-auths.push("zef:{config-value('un')}") if config-value('un');
   unless %findings<meta><auth> ~~ any(@group-auths) {
     log(
       ERROR,
-      "auth does not match logged in user or user's groups\n  expected: %s\n  got: %s",
-      @group-auths.raku,
+      "auth does not match logged in user or user's groups\n  expected any of: %s\n  got: %s",
+      @group-auths.join(', '),
       %findings<meta><auth>, 
     );
     $has-error = True;
@@ -510,7 +510,7 @@ multi MAIN('upload', Str :i(:$file) = '', Bool :d(:$dry-run) = False,  Bool :s(:
 
   my $response = Fez::Types::api-response.new(:!success);
   while ! ($response.success//False) {
-    $response = upload(config-value('key'), $fn.IO);
+    $response = direct-upload(config-value('key'), $fn.IO);
 
     last if $response.success;
     if ($response.message//'') eq 'expired' {

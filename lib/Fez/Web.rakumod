@@ -4,7 +4,7 @@ use Fez::Util::Json;
 use Fez::Util::Config;
 
 my @handlers = |config-value('requestors');
-my $uri      = config-value('host');
+my $uri      = 'http://localhost:8080'; # config-value('host');
 
 state $handler = do {
   my $handler = @handlers.map({

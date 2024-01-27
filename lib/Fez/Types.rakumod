@@ -15,7 +15,10 @@ This module contains all of the api responses that you might get from fez
 class api-response {
   has Bool $!success;
   has Str $!message;
-  submethod BUILD(:$!success = False, :$!message = Nil) {}
+  submethod BUILD(
+    :$!success = False,
+    :$!message = Nil,
+  ) {}
 
   method success {$!success//False};
   method message {$!message//(self.success??''!!'unknown error')};

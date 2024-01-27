@@ -270,6 +270,7 @@ Uploads a dist to the fez|zef ecosystem
 returns: _api-response_
 }
 sub upload(Str:D $api-key, IO() $file where *.f --> Fez::Types::api-response) is export {
+  DEPRECATED 'Fez::API::direct-upload';
   my Fez::Types::auth-response $response.=new:
     |get('/upload',
          :headers({:Authorization("Zef {$api-key}")}));
@@ -280,6 +281,34 @@ sub upload(Str:D $api-key, IO() $file where *.f --> Fez::Types::api-response) is
 
   Fez::Types::api-response.new:
     :success(try { post($response.key, :method<PUT>, :file($file.absolute))//'' } eq '' ?? True !! False);
+}
+
+#`{md
+## direct-upload
+
+Uploads a dist to the fez|zef ecosystem
+
+1. api-key: required
+1. file: required, path to a file to upload
+
+returns: _api-response_
+}
+sub direct-upload(Str:D $api-key, IO() $file where *.f --> Fez::Types::api-response) is export {
+  try {
+    CATCH {
+      default {
+        return Fez::Types::api-response.new(
+          :!success,
+          :message($_.message),
+        );
+      }
+    }
+    Fez::Types::api-response.new:
+      |post('/upload',
+        :headers({:Authorization("Zef {$api-key}")}),
+        :file($file.absolute)
+      );
+  };
 }
 
 #`{md
