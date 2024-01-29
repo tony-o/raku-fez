@@ -6,4 +6,4 @@ USAGE
 
 Removes <dist> from the ecosystem if it belongs to you. The dist must have
 been uploaded less than 24 hours prior to issuing this command. The <dist>
-string must match exactly as it's output from `fez list`.
+string must match exactly as its output from `fez list`.

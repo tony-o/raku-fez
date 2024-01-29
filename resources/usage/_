@@ -37,9 +37,10 @@ COMMANDS
 
 ENV OPTIONS
 
-  FEZ_CONFIG            if you need to modify your config, set this env var
+  FEZ_CONFIG              you can modify your config location by setting this
+                          environment variable
 
 CONFIGURATION (using: $user-config-path)
 
   Copy this to a cool location and write your own requestors/bundlers or
-  ignore it and use the default curl/wget/git tools for great success.
+  ignore it and use the default curl/wget/git tools for great success

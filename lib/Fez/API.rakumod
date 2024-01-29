@@ -228,11 +228,13 @@ Updates the user's meta
 returns: _api-response_
 }
 sub update-meta(Str:D $api-key, Str $name, Str $website, Str $email --> Fez::Types::api-response) is export {
+  my $payload = {};
+  $payload<name>    = $name    if $name    ne '';
+  $payload<website> = $website if $website ne '';
+  $payload<email>   = $email   if $email   ne '';
   Fez::Types::api-response.new:
     |post('/update-meta',
-          :data({ ($name ne ''   ?? :$name    !! %()),
-                  ($website ne ''?? :$website !! %()),
-                  ($email ne ''  ?? :$email   !! %())}),
+          :data($payload),
           :headers({:Authorization("Zef {$api-key}")}));
 }
 
