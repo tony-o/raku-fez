@@ -959,16 +959,17 @@ multi MAIN('module', Str:D $mod, Bool:D :c(:$class) = False) is export {
   $cwd.add('META6.json').spurt(to-j(%meta));
 } 
 
-multi MAIN('dep', Str:D $dist, Bool :b(:$build) = False, Bool :r(:$remove) = False) is export {
-  MAIN('depends', $dist, :$build, :$remove);
+multi MAIN('dep', Str:D $dist, Bool :b(:$build) = False, Bool :t(:$test) = False, Bool :r(:$remove) = False) is export {
+  MAIN('depends', $dist, :$build, :$test, :$remove);
 }
-multi MAIN('depends', Str:D $dist, Bool :b(:$build) = False, Bool :r(:$remove) = False) is export {
+multi MAIN('depends', Str:D $dist, Bool :b(:$build) = False, Bool :t(:$test) = False, Bool :r(:$remove) = False) is export {
   my $cwd = upcurse-meta();
+  log(FATAL, '-b(--build) and -t(--test) flags cannot be used together, choose one') if $test && $build;
   log(FATAL, 'could not find META6.json') unless $cwd;
   log(DEBUG, "found META6.json in {$cwd.relative}");
 
   log(DEBUG, 'inspecting meta file');
-  my $dep-key = "{$build??'build-'!!''}depends";
+  my $dep-key = "{$build??'build-'!!$test??'test-'!!''}depends";
   my %meta = from-j($cwd.add('META6.json').slurp);
 
 

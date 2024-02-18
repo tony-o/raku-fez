@@ -1,14 +1,16 @@
 USAGE
 
-  fez dep <dist> [-b]
+  fez dep <dist> [-b] [-t]
 
-  fez depends <dist> [--build=False]
+  fez depends <dist> [--build=False] [--test=False]
 
 FLAGS
 
   OPTIONAL
 
   -b|--build          adds the <dist> to build depends rather than
+                      runtime depends
+  -t|--test           adds the <dist> to test depends rather than
                       runtime depends
 
 Adds a dependency to the META file.
