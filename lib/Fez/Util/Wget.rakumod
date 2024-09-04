@@ -26,9 +26,12 @@ method get($url, :%headers = ()) {
 method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
   my @args = ('wget', '--method', $method, '-O-');
   @args.push('--body-data', $data) if $data;
-  @args.push('--body-file', $file) if $file;
 
   @args.push('--header', "$_: {%headers{$_}}") for %headers.keys;
+  if $file {
+    @args.push('--header', 'Content-Type: multipart/form-data boundary=FILEUPLOAD');
+    @args.push('--body-file', $file);
+  }
   @args.push($url);
 
   my ($rc, $out, $err) = run-p('WGET', |@args);

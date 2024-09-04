@@ -26,7 +26,7 @@ method get($url, :%headers = ()) {
 method post($url, :$method = 'POST', :$data = '', :$file = '', :%headers = ()) {
   my @args = ('curl', '-vs', '-X', $method);
   @args.push('-d', $data) if $data;
-  @args.push('-T', $file) if $file;
+  @args.push('-F', "dist=\@{$file}") if $file;
   @args.push('-H', "$_: {%headers{$_}}") for %headers.keys;
   @args.push($url);
 

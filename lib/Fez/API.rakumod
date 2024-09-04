@@ -296,21 +296,11 @@ Uploads a dist to the fez|zef ecosystem
 returns: _api-response_
 }
 sub direct-upload(Str:D $api-key, IO() $file where *.f --> Fez::Types::api-response) is export {
-  try {
-    CATCH {
-      default {
-        return Fez::Types::api-response.new(
-          :!success,
-          :message($_.message),
-        );
-      }
-    }
-    Fez::Types::api-response.new:
-      |post('/upload',
-        :headers({:Authorization("Zef {$api-key}")}),
-        :file($file.absolute)
-      );
-  };
+  Fez::Types::api-response.new:
+    |post('/upload',
+          :headers({:Authorization("Zef {$api-key}")}),
+          :file($file.absolute)
+    );
 }
 
 #`{md
