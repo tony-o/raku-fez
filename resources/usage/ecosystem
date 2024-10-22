@@ -1,0 +1,9 @@
+USAGE
+
+  fez ecosystem command 
+
+COMMANDS
+
+  list                  lists ecosystems your client knows about 
+  add                   adds an ecosystem to your client
+  switch                switches the ecosystem you're interacting with

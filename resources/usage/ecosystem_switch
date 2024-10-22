@@ -1,0 +1,8 @@
+USAGE
+
+  fez e s <ecosystem-name>
+
+  fez ecosystem switch <ecosystem-name>
+
+Will reconfigure your client to use <ecosystem-name> as its backend. Will
+error if the <ecosystem-name> is unknown by your client.

@@ -1,0 +1,7 @@
+USAGE
+
+  fez e l
+
+  fez ecosystem list
+
+Lists the ecosystem this client knows about.

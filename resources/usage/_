@@ -34,6 +34,8 @@ COMMANDS
     remove                removes a dist from the ecosystem (requires fully
                           qualified dist name, copy from `list` if in doubt)
     org                   org actions, use `fez org help` for more info
+    ecosystem             lists ecosystem your client knows about, use
+                          `fez ecosystem help` for more info
 
 ENV OPTIONS
 

@@ -1,6 +1,6 @@
 {
   "api": "0",
-  "auth": "zef:tony-o",
+  "auth": "zef:tonyo",
   "build-depends": [
   ],
   "depends": [
@@ -596,6 +596,11 @@
     "usage/command",
     "usage/config",
     "usage/depends",
+    "usage/ecosystem",
+    "usage/ecosystem_add",
+    "usage/ecosystem_list",
+    "usage/ecosystem_remove",
+    "usage/ecosystem_switch",
     "usage/help",
     "usage/init",
     "usage/license",

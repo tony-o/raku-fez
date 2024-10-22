@@ -1,0 +1,16 @@
+USAGE
+
+  fez e a [-f] <url>
+
+  fez ecosystem add [--force] <url>
+
+FLAGS
+
+  OPTIONAL
+
+  -f|--force              will overwrite the ecosystem info currently stored
+                          rather than throwing an error when the ecosystem is
+                          already known
+
+Will query <url> for the ecosystem's prefix and add that information to the
+ecosystems your client knows about.

@@ -1,0 +1,8 @@
+USAGE
+
+  fez e r <ecosystem-name>
+
+  fez ecosystem remove <ecosystem-name>
+
+Will remove <ecosystem-name> from your client config. Will error if you
+attempt to remove `zef`.

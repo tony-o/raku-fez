@@ -43,4 +43,8 @@ sub reload-config is export {
   %USER-CONFIG = from-j($USER-CONFIG-PATH.slurp);
 }
 
+sub current-prefix is export {
+  config-value('ecosystems').first({ $_.value eq config-value('host') }).key ~ ':';
+}
+
 reload-config;

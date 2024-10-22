@@ -42,6 +42,111 @@ multi MAIN('version') is export is pure {
   log(MSG, 'fez version: %s', $?DISTRIBUTION.meta<version>);
 }
 
+multi MAIN('e', 'l') is export {
+  MAIN('ecosystem', 'list');
+}
+
+multi MAIN('ecosystem', 'list') is export {
+  my $known = config-value('ecosystems')//{zef => "https://360.zef.pm"};
+  my $longest-key = max(0, | $known.keys.map(*.chars));
+  for $known.keys -> $eco {
+    log(MSG, "{$eco}{' ' x ($longest-key - $eco.chars)}: {$known{$eco}}");
+  }
+}
+
+multi MAIN('e', 'r', Str $name) is export {
+  MAIN('ecosystem', 'remove', $name);
+}
+
+multi MAIN('ecosystem', 'remove', Str $name) is export {
+  my $knowns = config-value('ecosystems')//{zef => 'https://360.zef.pm'};
+
+  log(FATAL, "zef cannot be removed") if $name eq 'zef';
+  log(FATAL, "$name is not known by this client") if $knowns{$name}:!exists;
+  $knowns{$name}:delete;
+
+  my %new-config = user-config;
+  %new-config<ecosystems> = $knowns;
+  write-to-user-config(%new-config);
+  
+  log(MSG, "Successfully removed {$name}");
+}
+
+multi MAIN('ecosystem', 'add', Str $url, Bool :f($force) = False) is export {
+  my $knowns = config-value('ecosystems')//{zef => 'https://360.zef.pm'};
+  my $is-known-by = Nil;
+  for $knowns.keys -> $k {
+    $is-known-by = $k if $knowns{$k} eq $url;
+  }
+
+  my $response = get('/auth-prefix');
+  if ! $response<success> {
+    log(FATAL, 'Failed to retrieve auth information from '~$url);
+  }
+  if $knowns{$response<message>}:exists && !$force {
+    log(FATAL, "Not willing to overwrite existing ecosystem prefix ({$response<message>}), use -f to force");
+  }
+  if $is-known-by ~~ Str &&  $is-known-by eq $response<message> {
+    log($force ?? WARN !! FATAL, "$url is known by $is-known-by, this can have serious consequences");
+  }
+
+  $knowns{$response<message>} = $url;
+  my %new-config = user-config;
+  %new-config<ecosystems> = $knowns;
+  write-to-user-config(%new-config);
+  
+  log(MSG, "Successfully added {$response<message>}");
+}
+
+
+multi MAIN('e', 'a', Str $url, :f($force) = False) is export {
+  MAIN('ecosystem', 'add', $url, :f($force));
+}
+
+multi MAIN('ecosystem', 'add', Str $url, Bool :f($force) = False) is export {
+  my $knowns = config-value('ecosystems')//{zef => 'https://360.zef.pm'};
+  my $is-known-by = Nil;
+  for $knowns.keys -> $k {
+    $is-known-by = $k if $knowns{$k} eq $url;
+  }
+
+  my $response = get('/auth-prefix');
+  if ! $response<success> {
+    log(FATAL, 'Failed to retrieve auth information from '~$url);
+  }
+  if $knowns{$response<message>}:exists && !$force {
+    log(FATAL, "Not willing to overwrite existing ecosystem prefix ({$response<message>}), use -f to force");
+  }
+  if $is-known-by ~~ Str &&  $is-known-by eq $response<message> {
+    log($force ?? WARN !! FATAL, "$url is known by $is-known-by, this can have serious consequences");
+  }
+
+  $knowns{$response<message>} = $url;
+  my %new-config = user-config;
+  %new-config<ecosystems> = $knowns;
+  write-to-user-config(%new-config);
+  
+  log(MSG, "Successfully added {$response<message>}");
+}
+
+multi MAIN('e', 's', Str $name) is export {
+  MAIN('ecosystem', 'switch', $name);
+}
+
+multi MAIN('ecosystem', 'switch', Str $name) is export {
+  my $knowns = config-value('ecosystems')//{zef => 'https://360.zef.pm'};
+  if $knowns{$name}:!exists {
+    log(FATAL, "Ecosystem $name is unknown");
+  }
+
+  my %new-config = user-config;
+  %new-config<host> = $knowns{$name};
+  %new-config<key> = '';
+  write-to-user-config(%new-config);
+  
+  log(MSG, "Now using {$name} for distribution, you may need to login or register before continuing");
+}
+
 multi MAIN('o', 'c', Str $org-name, Str $org-email) is export {
   MAIN('org', 'create', $org-name, $org-email);
 }
@@ -343,8 +448,8 @@ multi MAIN('review') is export {
     log(ERROR, 'ver cannot be "*"');
     $has-error = True;
   }
-  my @group-auths = |(config-value('groups')//[]).map({"zef:{$_<group>}"});
-  @group-auths.push("zef:{config-value('un')}") if config-value('un');
+  my @group-auths = |(config-value('groups')//[]).map({"{current-prefix}{$_<group>}"});
+  @group-auths.push("{current-prefix}{config-value('un')}") if config-value('un');
   unless %findings<meta><auth> ~~ any(@group-auths) {
     log(
       ERROR,
@@ -370,8 +475,8 @@ multi MAIN('meta', Str :n(:$name) is copy, Str :w(:$website) is copy, Str :e(:$e
     exit 255;
   }
 
-  my $ukey = "zef:{config-value('un')}";
-  my $response = get('http://360.zef.pm/meta.json');
+  my $ukey = "{current-prefix}{config-value('un')}";
+  my $response = get('/meta.json');
   if $response{$ukey} {
     log(MSG, 'Name:    %s', $response{$ukey}<name>//'<none provided>');
     log(MSG, 'Email:   %s', $response{$ukey}<email>//'<none provided>');
@@ -543,10 +648,10 @@ multi MAIN('upload', Str :i(:$file) = '', Bool :d(:$dry-run) = False,  Bool :s(:
 }
 
 
-multi MAIN('ls', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
+multi MAIN('ls', Str $name?, Str() :$url = '/index.json') is export {
   MAIN('list', $name, :$url);
 }
-multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is export {
+multi MAIN('list', Str $name?, Str() :$url = '/index.json') is export {
   MAIN('login') unless config-value('key');
   my $show-login = False;
   my $response = org-list(config-value('key'));
@@ -559,7 +664,7 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
   } else {
     log(ERROR, 'Failed to update config');
   }
-  my @auths = ["zef:{config-value('un')}", |($response.groups//()).map({"zef:{$_<group>}"})];
+  my @auths = ["{current-prefix}{config-value('un')}", |($response.groups//()).map({"{current-prefix}{$_<group>}"})];
   my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
                              .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
                              .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
@@ -575,10 +680,10 @@ multi MAIN('list', Str $name?, Str() :$url = 'http://360.zef.pm/index.json') is 
   log(WARN, 'A login may be required to see updated results') if $show-login;
 }
 
-multi MAIN('rm', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
+multi MAIN('rm', Str $dist, Str() :$url = '/index.json') is export {
   MAIN('remove', $dist, :$url);
 }
-multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is export {
+multi MAIN('remove', Str $dist, Str() :$url = '/index.json') is export {
   my $response = org-list(config-value('key'));
   if ! $response.success {
     log(ERROR, 'Failed to retrieve user orgs, the following list may be incomplete');
@@ -588,7 +693,7 @@ multi MAIN('remove', Str $dist, Str() :$url = 'http://360.zef.pm/index.json') is
   } else {
     log(ERROR, 'Failed to update config');
   }
-  my @auths = ["zef:{config-value('un')}", |@($response.groups//[]).map({"zef:{$_<group>}"})];
+  my @auths = ["{current-prefix}{config-value('un')}", |@($response.groups//[]).map({"{current-prefix}{$_<group>}"})];
   my $d = (get($url)||[]).grep({$_<auth> (elem) @auths})
                             .grep({$dist eq $_<dist>})
                             .first;
@@ -883,10 +988,10 @@ multi MAIN('init', Str $module is copy = '', Str:D :l(:$license) = config-value(
   my $auth = '';
   my $un = config-value('un') // '';
   if $un ne ''  {
-    log(DEBUG, "found auth zef:%s", $un);
-    $auth = "zef:{$un}";
+    log(DEBUG, "found auth {current-prefix}%s", $un);
+    $auth = "{current-prefix}{$un}";
   } else {
-    log(INFO, "no auth found for the zef ecosystem, creating with empty auth str");
+    log(INFO, "no auth found for the {current-prefix.substr(0, *-1)} ecosystem, creating with empty auth str");
   }
 
   log(DEBUG, 'creating meta file');
