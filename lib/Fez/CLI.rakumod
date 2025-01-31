@@ -625,7 +625,7 @@ multi MAIN('upload', Str :i(:$file) = '', Bool :d(:$dry-run) = False,  Bool :s(:
       next;
     }
     my $error = $response.message // 'no reason';
-    log(FATAL, "Something went wrong while authenticating: %s.\nDo you need to run 'fez login' again?", $error);
+    log(FATAL, "Something went wrong: %s.\nDo you need to run 'fez login' again?", $error);
   }
 
   if '' eq $file && !$save-autobundle {
