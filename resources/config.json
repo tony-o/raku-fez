@@ -1,4 +1,4 @@
 {"bundlers": ["Fez::Util::Pkg"],
  "requestors": ["Fez::Util::Curl", "Fez::Util::Wget"],
- "host": "https://api.zef.pm"
+ "host": "https://v100.zef.pm"
 }

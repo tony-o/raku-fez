@@ -35,3 +35,6 @@ method able(--> Bool);
 
 Your current config path is: $user-config-path
                              $system-config-path
+
+Effective configuration is:
+$effective-config
