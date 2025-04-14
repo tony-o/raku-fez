@@ -41,14 +41,25 @@ Fez - Raku dist manager
 | license | view or manage the current repo's license |
 | _*RELEASE MANAGEMENT*_ |
 | review | goes through the current directory to find any errors that might be lurking upon upload |
-| register | registers you up for a new account |
-| login | logs you in and saves your key info |
 | upload | creates a distribution tarball and uploads |
-| meta | update your public meta info (website, email, name) |
-| reset-password | initiates a password reset using the email that you registered with |
 | list | lists the dists for the currently logged in user |
 | remove | removes a dist from the ecosystem (requires fully qualified dist name, copy from `list` if in doubt) |
+| _*USER MANAGEMENT*_ |
+| register | registers you up for a new account |
+| login | logs you in and saves your key info |
+| meta | update your public meta info (website, email, name) |
+| reset-password | initiates a password reset using the email that you registered with |
+| _*ORG MANAGEMENT*_ |
 | org | org actions, use `fez org help` for more info |
+| org accept  | Accept an invitation to a fez organisation |
+| org create  | Create a fez organisation |
+| org invite  | Invite someone to a fez organisation |
+| org leave   | Leave a fez organisation |
+| org list    | List ??? (modules?) in a fez organisation |
+| org members | List members in a fez organisation |
+| org meta    | Update a fez organisation's meta information |
+| org modify  | ??? Modify a fez organisation |
+| org pending | ??? List pending invitations to a fez organisation |
 
 
 To see more information about any of these commands just run `fez <cmd>`, example:
