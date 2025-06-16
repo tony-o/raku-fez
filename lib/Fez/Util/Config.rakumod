@@ -1,6 +1,7 @@
 unit module Fez::Util::Config;
 
 use Fez::Util::Json;
+use Fez::Logr;
 
 state $ENV-CONFIG-PATH = (%*ENV<FEZ_CONFIG>//%?RESOURCES<config.json>).IO;
 state $USER-CONFIG-PATH = (
@@ -44,7 +45,12 @@ sub reload-config is export {
 }
 
 sub current-prefix is export {
-  config-value('ecosystems').first({ $_.value eq config-value('host') }).key ~ ':';
+  my $host = (config-value('ecosystems')//{})
+    .pairs
+    .first({ $_.value eq config-value('host') });
+  log(FATAL, "{config-value('host')} has no associated ecosystem, use `fez ecosystem` for more information")
+    if !$host;
+  $host.key ~ ':';
 }
 
 reload-config;

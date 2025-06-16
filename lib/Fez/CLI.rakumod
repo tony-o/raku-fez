@@ -74,7 +74,7 @@ multi MAIN('ecosystem', 'remove', Str $name) is export {
 }
 
 multi MAIN('ecosystem', 'add', Str $url, Bool :f($force) = False) is export {
-  my $knowns = config-value('ecosystems')//{zef => from-j(%?RESOURCES<config.json>>.IO.slurp)<host>};
+  my $knowns = config-value('ecosystems')//%(zef => from-j(%?RESOURCES<config.json>.IO.slurp)<host>);
   my $is-known-by = Nil;
   for $knowns.keys -> $k {
     $is-known-by = $k if $knowns{$k} eq $url;
@@ -275,7 +275,8 @@ multi MAIN('reset-password') is export {
   my $response = init-reset-password($un);
   if ! $response.success {
     log(FATAL, ['There was an error communicating with the service, please',
-                'try again in a few minutes.'].join("\n"));
+                'try again in a few minutes.',
+                $response.message ?? 'Error: '~$response.message !! ''].grep(* ne '').join("\n"));
   }
   log(MSG, 'A reset key was successfully requested, please check your email');
   my $key  = prompt-wrapper('>>= What is the key in your email (ctrl+c to cancel)? ') while ($key//'') eq '';
