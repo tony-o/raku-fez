@@ -219,8 +219,8 @@ multi MAIN('org', 'pending') is export {
   if $response.success {
     log(MSG, 'No pending invites found') unless $response.groups;
     log(MSG, 'R Org') if $response.groups;
-    for $response.groups.sort({ $^a<role> eq $^b<role> ?? $^a<group> cmp $^b<group> !! $^a<role> cmp $^b<role> }) -> %g {
-      log(MSG, '%s %s', %g<role>.substr(0,1), %g<group>);
+    for $response.groups.sort({ $^a<role> eq $^b<role> ?? ($^a<group>//$^a<name>) cmp ($^b<group>//$^b<name>) !! $^a<role> cmp $^b<role> }) -> %g {
+      log(MSG, '%s %s', %g<role>.substr(0,1), %g<group>//%g<name>);
     }
   } else {
     log(FATAL, $response.message);
@@ -450,7 +450,7 @@ multi MAIN('review') is export {
     log(ERROR, 'ver cannot be "*"');
     $has-error = True;
   }
-  my @group-auths = |(config-value('groups')//[]).map({"{current-prefix}{$_<group>}"});
+  my @group-auths = |(config-value('groups')//[]).map({"{current-prefix}{$_<group> // $_<name>}"});
   @group-auths.push("{current-prefix}{config-value('un')}") if config-value('un');
   unless %findings<meta><auth> ~~ any(@group-auths) {
     log(
@@ -535,7 +535,7 @@ multi MAIN('org', 'list') is export {
     log(MSG, 'Not a member of any orgs, yet') unless $response.groups;
     log(MSG, 'R Org Name') if $response.groups;
     for $response.groups -> $g {
-      log(MSG, '%s %s', $g<role>.substr(0,1), $g<group>);
+      log(MSG, '%s %s', $g<role>.substr(0,1), $g<group>//$g<name>);
     }
   } else {
     log(FATAL, $response.message);
@@ -666,7 +666,7 @@ multi MAIN('list', Str $name?, Str() :$url = '/index.json') is export {
   } else {
     log(ERROR, 'Failed to update config');
   }
-  my @auths = ["{current-prefix}{config-value('un')}", |($response.groups//()).map({"{current-prefix}{$_<group>}"})];
+  my @auths = ["{current-prefix}{config-value('un')}", |($response.groups//()).map({"{current-prefix}{$_<group> // $_<name>}"})];
   my @dists = (get($url)||[]).grep({$_<auth> (elem) @auths})
                              .grep({!$name.defined || $_<name>.lc.index($name.lc) !~~ Nil})
                              .sort({$^a<name>.lc cmp $^b<name>.lc ~~ Same
@@ -695,7 +695,7 @@ multi MAIN('remove', Str $dist, Str() :$url = '/index.json') is export {
   } else {
     log(ERROR, 'Failed to update config');
   }
-  my @auths = ["{current-prefix}{config-value('un')}", |@($response.groups//[]).map({"{current-prefix}{$_<group>}"})];
+  my @auths = ["{current-prefix}{config-value('un')}", |@($response.groups//[]).map({"{current-prefix}{$_<group> // $_<name>}"})];
   my $d = (get($url)||[]).grep({$_<auth> (elem) @auths})
                             .grep({$dist eq $_<dist>})
                             .first;
