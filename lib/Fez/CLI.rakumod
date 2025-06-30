@@ -20,6 +20,7 @@ $UNATTENDED = @*ARGS.grep(* ~~ '--unattended').elems > 0;
 @*ARGS = @*ARGS.grep(* ne '--unattended');
 log(DEBUG, 'Running in unattended mode') if $UNATTENDED;
 
+
 sub pass-wrapper(Str:D $prompt --> Str) {
   if $UNATTENDED {
     log(ERROR, 'Requested prompt with --unattended: %s', $prompt);
@@ -35,6 +36,35 @@ sub prompt-wrapper(Str:D $prompt --> Str) {
   prompt($prompt);
 }
 
+if !config-value('ecosystems') {
+  my $result = '-';
+  while $result.lc !~~ 'y'|'ye'|'yes'|'n'|'no'|'' {
+    $result = prompt-wrapper('Would you like to update your current config for use with the new ecosystem (Y/n)? ');
+  }
+  if $result.lc ~~ 'n'|'no' {
+    log(FATAL, 'In order for fez to use the new ecosystem code, the config must be updated');
+  }
+  my %config = user-config;
+  log(INFO, "Current config is:\n" ~ to-j(%config));
+
+  %config<ecosystems> = {
+    :zef<https://42.zef.pm>,
+  };
+
+  log(INFO, "New config is:\n" ~ to-j(%config));
+
+  $result = '-';
+  while $result.lc !~~ 'y'|'ye'|'yes'|'n'|'no'|'' {
+    $result = prompt-wrapper('Proceed (y/N)? ');
+  }
+
+  if $result.lc ~~ 'n'|'no'|'' {
+    log(FATAL, 'Request denied.');
+  }
+
+  write-to-user-config(%config);
+}
+
 multi MAIN('v') is export is pure {
   MAIN('version');
 }
@@ -48,7 +78,7 @@ multi MAIN('e', 'l') is export {
 
 # TODO: these should do key management on their own and not require re-login
 multi MAIN('ecosystem', 'list') is export {
-  my $known = config-value('ecosystems')//{zef => from-j(%?RESOURCES<config.json>>.IO.slurp)<host>};
+  my $known = config-value('ecosystems');
   my $longest-key = max(0, | $known.keys.map(*.chars));
   for $known.keys -> $eco {
     log(MSG, "{$eco}{' ' x ($longest-key - $eco.chars)}: {$known{$eco}}");
@@ -60,7 +90,7 @@ multi MAIN('e', 'r', Str $name) is export {
 }
 
 multi MAIN('ecosystem', 'remove', Str $name) is export {
-  my $knowns = config-value('ecosystems')//{zef => from-j(%?RESOURCES<config.json>>.IO.slurp)<host>};
+  my $knowns = config-value('ecosystems');
 
   log(FATAL, "zef cannot be removed") if $name eq 'zef';
   log(FATAL, "$name is not known by this client") if $knowns{$name}:!exists;
@@ -74,7 +104,7 @@ multi MAIN('ecosystem', 'remove', Str $name) is export {
 }
 
 multi MAIN('ecosystem', 'add', Str $url, Bool :f($force) = False) is export {
-  my $knowns = config-value('ecosystems')//%(zef => from-j(%?RESOURCES<config.json>.IO.slurp)<host>);
+  my $knowns = config-value('ecosystems');
   my $is-known-by = Nil;
   for $knowns.keys -> $k {
     $is-known-by = $k if $knowns{$k} eq $url;
@@ -105,7 +135,7 @@ multi MAIN('e', 'a', Str $url, :f($force) = False) is export {
 }
 
 multi MAIN('ecosystem', 'add', Str $url, Bool :f($force) = False) is export {
-  my $knowns = config-value('ecosystems')//{zef => from-j(%?RESOURCES<config.json>>.IO.slurp)<host>};
+  my $knowns = config-value('ecosystems');
   my $is-known-by = Nil;
   for $knowns.keys -> $k {
     $is-known-by = $k if $knowns{$k} eq $url;
@@ -135,7 +165,7 @@ multi MAIN('e', 's', Str $name) is export {
 }
 
 multi MAIN('ecosystem', 'switch', Str $name) is export {
-  my $knowns = config-value('ecosystems')//{zef => from-j(%?RESOURCES<config.json>>.IO.slurp)<host>};
+  my $knowns = config-value('ecosystems');
   if $knowns{$name}:!exists {
     log(FATAL, "Ecosystem $name is unknown");
   }
@@ -1254,26 +1284,3 @@ multi MAIN('resource', Str:D $path is copy, Bool:D :r($remove) = False) is expor
   $cdir.add($fname).spurt: '';
   ensure-resource-in-meta;
 }
-
-
-
-#multi MAIN(*@p, *%n) {
-#  ## load extensions
-#  my @l = |(user-config<extensions>//[]), |(env-config<extensions>//[]);
-#  my %*USAGE;
-#  for @l -> $ext {
-#    CATCH {
-#      default {
-#        $*ERR.say: "=<< error loading requested extension: $ext";
-#      }
-#    }
-#    require ::("$ext") <&MAIN>;
-#    try {
-#      %*USAGE = %*USAGE, | ( try { ::("{$ext}::EXPORT::DEFAULT::%usage"); } // {});
-#      ::("{$ext}::EXPORT::DEFAULT::&MAIN").(|@p, |%n);
-#      exit 0;
-#    };
-#  }
-#  MAIN(:h);
-#  exit 1;
-#}
