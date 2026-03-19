@@ -702,10 +702,10 @@ multi MAIN('list', Str $name?, Str() :$url = '/') is export {
   log(WARN, 'A login may be required to see updated results') if $show-login;
 }
 
-multi MAIN('rm', Str $dist, Str() :$url = '/index.json') is export {
+multi MAIN('rm', Str $dist, Str() :$url = '/') is export {
   MAIN('remove', $dist, :$url);
 }
-multi MAIN('remove', Str $dist, Str() :$url = '/index.json') is export {
+multi MAIN('remove', Str $dist, Str() :$url = '/') is export {
   my $response = org-list(config-value('key'));
   if ! $response.success {
     log(ERROR, 'Failed to retrieve user orgs, the following list may be incomplete');
