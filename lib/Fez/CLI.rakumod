@@ -837,9 +837,7 @@ multi MAIN('refresh', Bool:D :d(:$dry-run) = False, :q(:$quiet) = False) is expo
                !! {};
 
   log(DEBUG, "scanning files in {$cwd.add('lib').relative}");
-  my $ignorer = $cwd.add('.gitignore').e
-             ?? parse(|$cwd.IO.add('.gitignore').IO.slurp.lines, '.git', :git-ignore)
-             !! parse('**/.precomp', '**.swp', '.git');
+  my $ignorer = parse(|ignored-files($cwd), '**/.precomp', '**.swp', '.git', :git-ignore);
 
   my @files = ls($cwd.add('lib'), -> $f {
     !$ignorer.match($f.relative($cwd)) && (

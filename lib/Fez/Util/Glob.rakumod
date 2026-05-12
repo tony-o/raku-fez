@@ -8,6 +8,18 @@ class globbalizer {
   method rfilter(*@lines   --> List) { @lines.grep({self.rmatch($_)}).grep(*.defined).list; }
 }
 
+constant @IGNORED-FILES = <.gitignore .fezignore>;
+
+sub ignored-files(IO::Path:D $cwd = '.'.IO --> List) is export {
+  flat(
+    @IGNORED-FILES
+      .map({ $cwd.add($_) })
+      .grep(*.f)
+      .map(*.slurp.lines),
+    @IGNORED-FILES
+  ).unique.List;
+}
+
 constant %spesh = {'.'=>1, '+'=>1, '*'=>1,
                    '?'=>1, '^'=>1, '$'=>1,
                    '('=>1, ')'=>1, '['=>1,

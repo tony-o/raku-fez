@@ -9,9 +9,7 @@ method bundle($location, :$dry-run) {
     mkdir 'sdist';
   }
   my $pwd = '.'.IO.resolve.basename;
-  my $ignorer = '.'.IO.add('.gitignore').IO.f
-             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, '.git', '.github', 'sdist/*', :git-ignore)
-             !! parse('.git', '.precomp', 'sdist/*');
+  my $ignorer = parse(|ignored-files, '.git', '.github', 'sdist/*', '.precomp', :git-ignore);
   my @manifest = ls('.'.IO.absolute, -> $fn { $ignorer.rmatch($fn.relative.Str); })
                .map({$pwd.IO.add($_)});
   return @manifest if $dry-run;
