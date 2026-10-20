@@ -29,14 +29,14 @@ multi head($endpoint, :%headers = { }) is export {
 multi get($endpoint, :%headers = { }) is export {
   my $out = $handler.get("{$endpoint.substr(0,4) eq 'http'??''!!$uri}$endpoint", :%headers);
   try {
-    CATCH { default { $out; } }
+    CATCH { default { return $out; } }
     from-j($out);
   };
 }
 multi post($endpoint, :$method = 'POST', :$data = '', :$file = '', :%headers) is export {
   my $out = $handler.post("{$endpoint.substr(0,4) eq 'http'??''!!$uri}$endpoint", :$method, :data($data ?? to-j($data) !! ''), :$file, :%headers);
   try {
-    CATCH { default { $out; } }
+    CATCH { default { return $out; } }
     from-j($out);
   };
 }
