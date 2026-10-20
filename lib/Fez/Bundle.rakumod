@@ -35,10 +35,7 @@ sub bundle($target, :$dry-run = False) is export {
 
   my $location = $sdist.add($io);
   
-  my $ignorer = '.'.IO.add('.gitignore').IO.f
-             ?? parse(|'.'.IO.add('.gitignore').IO.slurp.lines, | @ignored-dirs,
-                     :git-ignore)
-             !! parse( '.precomp', |@ignored-dirs);
+  my $ignorer = parse(|ignored-files, |@ignored-dirs, :git-ignore);
              
   my @manifest = ls('.'.IO, -> $fn {
     $ignorer.rmatch($fn.Str)
